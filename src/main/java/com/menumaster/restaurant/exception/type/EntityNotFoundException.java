@@ -7,7 +7,10 @@ import lombok.Setter;
 @Setter
 public class EntityNotFoundException extends RuntimeException {
 
-    public EntityNotFoundException(String resource, String id) {
-        super(String.format("%s with id %s not found", resource, id));
+    private String message;
+
+    public EntityNotFoundException(String className, Long id){
+        super();
+        this.message = "Não foi possível encontrar " + className + " com id: " + id;
     }
 }

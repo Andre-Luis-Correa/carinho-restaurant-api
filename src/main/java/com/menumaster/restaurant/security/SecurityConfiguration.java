@@ -26,7 +26,6 @@ public class SecurityConfiguration {
     private final UserAuthenticationFilter userAuthenticationFilter;
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED = {
-            // Authentication
             "/authentication/login",
             "/authentication/create-user",
             "/authentication/validate-token",
@@ -59,10 +58,10 @@ public class SecurityConfiguration {
                 .cors(cors -> cors
                         .configurationSource(request -> {
                             var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-                            corsConfiguration.setAllowedOriginPatterns(List.of("*")); // Permite todas as origens
+                            corsConfiguration.setAllowedOriginPatterns(List.of("*"));
                             corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                             corsConfiguration.setAllowedHeaders(List.of("*"));
-                            corsConfiguration.setAllowCredentials(true); // Se precisar enviar cookies ou cabeçalhos de autorização
+                            corsConfiguration.setAllowCredentials(true);
                             return corsConfiguration;
                         })
                 )

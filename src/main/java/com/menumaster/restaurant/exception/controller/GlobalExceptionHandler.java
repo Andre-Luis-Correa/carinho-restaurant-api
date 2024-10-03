@@ -31,39 +31,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorDescription> handleValidationException(ValidationException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
-                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage()
         );
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
     public ResponseEntity<ErrorDescription> handleDuplicateKeyException(DuplicateKeyException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
-                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.CONFLICT.value(),
                 ex.getMessage()
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
-    // Novo handler para capturar MethodArgumentNotValidException
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<List<ErrorDescription>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         List<ErrorDescription> errors = new ArrayList<>();
-
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            ErrorDescription errorDescription = new ErrorDescription(
+            errors.add(new ErrorDescription(
                     HttpStatus.BAD_REQUEST.value(),
                     error.getField() + ": " + error.getDefaultMessage()
-            );
-            errors.add(errorDescription);
+            ));
         }
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
-    // Handler para capturar DataIntegrityViolationException causada por SQLIntegrityConstraintViolationException
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorDescription> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         if (ex.getCause() instanceof SQLIntegrityConstraintViolationException) {

@@ -1,4 +1,4 @@
-package com.menumaster.restaurant.utils;
+package com.menumaster.restaurant.authentication.utils;
 
 import com.menumaster.restaurant.authentication.domain.entity.Role;
 import com.menumaster.restaurant.authentication.enums.RoleName;

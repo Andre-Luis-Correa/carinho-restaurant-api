@@ -7,11 +7,9 @@ import lombok.Setter;
 @Setter
 public class DuplicateKeyException extends RuntimeException{
     private String message;
-    private String details;
 
-    public DuplicateKeyException(String message, String details) {
+    public DuplicateKeyException(String message) {
         super(message);
         this.message = message;
-        this.details = details;
     }
 }
