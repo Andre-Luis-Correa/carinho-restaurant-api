@@ -38,7 +38,11 @@ public class SecurityConfiguration {
 
             // category
             "/category/list",
-            "/category/page"
+            "/category/page",
+
+            // measurementUnit
+            "/measurement-unit/list",
+            "/measurement-unit/page",
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
@@ -56,6 +60,11 @@ public class SecurityConfiguration {
             "/category/create",
             "/category/update/{id}",
             "/category/delete/{id}",
+
+            // measurementUnit
+            "/measurement-unit/create",
+            "/measurement-unit/update/{id}",
+            "/measurement-unit/delete/{id}"
 
     };
 

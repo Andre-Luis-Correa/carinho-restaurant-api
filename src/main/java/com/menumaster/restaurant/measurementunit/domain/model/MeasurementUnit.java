@@ -21,4 +21,7 @@ public class MeasurementUnit {
 
     @NotBlank
     private String name;
+
+    @NotBlank
+    private String acronym;
 }
