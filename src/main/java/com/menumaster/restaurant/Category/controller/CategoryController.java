@@ -27,7 +27,7 @@ public class CategoryController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<CategoryDTO> update(@PathVariable Long id, @Valid @RequestBody CategoryFormDTO categoryFormDTO) {
+    public ResponseEntity<CategoryDTO> update(@PathVariable Long id, @RequestBody CategoryFormDTO categoryFormDTO) {
         Category category = categoryService.getOrThrowException(id);
         return ResponseEntity.status(HttpStatus.OK).body(categoryService.update(category, categoryFormDTO));
     }

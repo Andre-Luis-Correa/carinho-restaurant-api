@@ -26,12 +26,12 @@ public class SecurityConfiguration {
     private final UserAuthenticationFilter userAuthenticationFilter;
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED = {
+            // authentication
             "/authentication/login",
             "/authentication/create-user",
             "/authentication/validate-token",
 
-            "/audio/transcribe",
-
+            // swagger
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
@@ -43,17 +43,30 @@ public class SecurityConfiguration {
             // measurementUnit
             "/measurement-unit/list",
             "/measurement-unit/page",
+
+            // ingredient
+            "/ingredient/list",
+            "/ingredient/page",
+            "/ingredient/get/{id}",
+
+            // dish
+            "/dish/list",
+            "/dish/page",
+            "/dish/get/{id}"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
+            // authentication
             "/authentication/test"
     };
 
     public static final String[] ENDPOINTS_CUSTOMER = {
+            // authentication
             "/authentication/test-customer"
     };
 
     public static final String[] ENDPOINTS_ADMIN = {
+            // authentication
             "/authentication/test-administrator",
 
             // category
@@ -64,11 +77,22 @@ public class SecurityConfiguration {
             // measurementUnit
             "/measurement-unit/create",
             "/measurement-unit/update/{id}",
-            "/measurement-unit/delete/{id}"
+            "/measurement-unit/delete/{id}",
+
+            // ingredient
+            "/ingredient/create",
+            "/ingredient/update/{id}",
+            "/ingredient/delete/{id}",
+
+            // dish
+            "/dish/create",
+            "/dish/update/{id}",
+            "/dish/delete/{id}"
 
     };
 
     public static final String[] ENDPOINTS_ATTENDANT = {
+            // authentication
             "/authentication/test-attendant"
     };
 

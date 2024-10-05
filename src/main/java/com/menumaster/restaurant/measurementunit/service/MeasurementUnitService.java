@@ -37,6 +37,9 @@ public class MeasurementUnitService {
     }
 
     public MeasurementUnit getOrThrowException(Long id) {
+        if(id == null) {
+            return null;
+        }
         return measurementUnitRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("MeasurementUnit", id.toString()));
     }
 
