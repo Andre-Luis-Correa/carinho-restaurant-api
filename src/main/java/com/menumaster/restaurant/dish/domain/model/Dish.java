@@ -1,6 +1,6 @@
 package com.menumaster.restaurant.dish.domain.model;
 
-import com.menumaster.restaurant.Category.domain.model.Category;
+import com.menumaster.restaurant.category.domain.model.Category;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

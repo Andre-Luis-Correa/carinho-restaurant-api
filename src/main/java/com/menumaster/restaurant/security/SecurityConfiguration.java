@@ -30,9 +30,15 @@ public class SecurityConfiguration {
             "/authentication/create-user",
             "/authentication/validate-token",
 
+            "/audio/transcribe",
+
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+
+            // category
+            "/category/list",
+            "/category/page"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
@@ -44,7 +50,13 @@ public class SecurityConfiguration {
     };
 
     public static final String[] ENDPOINTS_ADMIN = {
-            "/authentication/test-administrator"
+            "/authentication/test-administrator",
+
+            // category
+            "/category/create",
+            "/category/update/{id}",
+            "/category/delete/{id}",
+
     };
 
     public static final String[] ENDPOINTS_ATTENDANT = {
