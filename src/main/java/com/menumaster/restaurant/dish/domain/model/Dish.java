@@ -38,13 +38,9 @@ public class Dish {
     private String urlImage;
 
     @NotNull
-    private boolean isAvailable;
+    private Boolean isAvailable;
 
     @NotNull
     @ManyToOne
     private Category category;
-
-    @NotNull
-    @OneToMany
-    private List<DishIngredient> dishIngredientList;
 }

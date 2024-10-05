@@ -28,8 +28,4 @@ public class DishIngredient {
 
     @NotNull
     private Double quantity;
-
-    @NotNull
-    @ManyToOne
-    private MeasurementUnit measurementUnit;
 }

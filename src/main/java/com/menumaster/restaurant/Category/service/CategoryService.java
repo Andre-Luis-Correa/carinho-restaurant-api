@@ -37,6 +37,9 @@ public class CategoryService {
     }
 
     public Category getOrThrowException(Long id) {
+        if(id == null) {
+            return null;
+        }
         return categoryRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("category", id.toString()));
     }
 
