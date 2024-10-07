@@ -62,6 +62,20 @@ public class DishController {
         return ResponseEntity.status(HttpStatus.OK).body(dishService.update(dish, category, dishIngredientList, dishFormDTO));
     }
 
+    @PutMapping("/remove-ingredient/{id}")
+    public ResponseEntity<DishDTO> removeDishIngredient(@PathVariable Long id, @RequestBody List<Long> dishIngredientIdsList) {
+        Dish dish = dishService.getOrThrowException(id);
+
+        List<DishIngredient> dishIngredientList = new ArrayList<>();
+
+        for(Long dishIngredientId: dishIngredientIdsList) {
+            DishIngredient dishIngredient = dishService.getOrThrowExceptionByDishIngredientId(dishIngredientId);
+            dishIngredientList.add(dishIngredient);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(dishService.removeDishIngredient(dish, dishIngredientList));
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         Dish dish = dishService.getOrThrowException(id);

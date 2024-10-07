@@ -87,6 +87,7 @@ public class SecurityConfiguration {
             // dish
             "/dish/create",
             "/dish/update/{id}",
+            "/dish/remove-ingredient/{id}",
             "/dish/delete/{id}"
 
     };

@@ -153,4 +153,21 @@ public class DishService {
         Page<Dish> dishDTOPage = dishRepository.findAll(pageable);
         return dishDTOPage.map(this::convertDishToDishDTO);
     }
+
+    public DishDTO removeDishIngredient(Dish dish, List<DishIngredient> dishIngredientList) {
+        List<DishIngredient> dishIngredients = dishIngredientRepository.findAllByDish(dish);
+
+        for(DishIngredient dishIngredient : dishIngredientList) {
+            if(dishIngredients.contains(dishIngredient)) {
+                dishIngredientRepository.delete(dishIngredient);
+            }
+        }
+
+        return convertDishToDishDTO(dish);
+    }
+
+    public DishIngredient getOrThrowExceptionByDishIngredientId(Long id) {
+        return dishIngredientRepository.findById(id).orElseThrow( () -> new EntityNotFoundException("DishIngredient", id.toString()));
+
+    }
 }
