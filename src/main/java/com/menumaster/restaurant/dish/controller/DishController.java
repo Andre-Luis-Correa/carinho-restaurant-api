@@ -15,9 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +31,7 @@ public class DishController {
     private final DishService dishService;
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
+    private final RestTemplate restTemplate;
 
     @PostMapping("/create")
     public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) {
