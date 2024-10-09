@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.util.List;
-
 @Data
 @Entity
 @AllArgsConstructor
@@ -35,7 +33,7 @@ public class Dish {
     private Double reaisCostValue;
 
     @NotBlank
-    private String urlImage;
+    private String image;
 
     @NotNull
     private Boolean isAvailable;

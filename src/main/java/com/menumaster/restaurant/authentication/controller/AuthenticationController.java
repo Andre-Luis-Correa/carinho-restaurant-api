@@ -43,25 +43,4 @@ public class AuthenticationController {
         userService.createUser(createUserDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
-
-    @GetMapping("/test")
-    public ResponseEntity<String> getAuthenticationTest() {
-        return new ResponseEntity<>("Autenticado com sucesso", HttpStatus.OK);
-    }
-
-    @GetMapping("/test-customer")
-    public ResponseEntity<String> getCustomerAuthenticationTest() {
-        return new ResponseEntity<>("Cliente autenticado com sucesso", HttpStatus.OK);
-    }
-
-    @GetMapping("/test-administrator")
-    public ResponseEntity<String> getAdminAuthenticationTest() {
-        return new ResponseEntity<>("Administrador autenticado com sucesso", HttpStatus.OK);
-    }
-
-    @GetMapping("/test-attendant")
-    public ResponseEntity<String> getAttendantAuthenticationTest() {
-        return new ResponseEntity<>("Atendente autenticado com sucesso", HttpStatus.OK);
-    }
-
 }

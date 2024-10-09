@@ -27,7 +27,7 @@ public record DishDTO(
         Double reaisCostValue,
 
         @NotBlank
-        String urlImage,
+        String image,
 
         @NotNull
         boolean isAvailable,

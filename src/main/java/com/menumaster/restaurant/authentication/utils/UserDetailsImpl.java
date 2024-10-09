@@ -12,7 +12,7 @@ import java.util.Collections;
 @Getter
 public class UserDetailsImpl implements UserDetails {
 
-    private User user; // Classe de usuário que criamos anteriormente
+    private User user;
 
     public UserDetailsImpl(User user) {
         this.user = user;
@@ -20,12 +20,6 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        /*
-         Este método agora retorna uma coleção contendo um único GrantedAuthority,
-         que representa a única Role associada ao usuário.
-         Utilizamos Collections.singletonList para criar uma lista imutável
-         contendo o SimpleGrantedAuthority derivado da Role do usuário.
-        */
         return Collections.singletonList(
                 new SimpleGrantedAuthority(user.getRole().getName().name())
         );
@@ -34,12 +28,12 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public String getPassword() {
         return user.getPassword();
-    } // Retorna a credencial do usuário que criamos anteriormente
+    }
 
     @Override
     public String getUsername() {
         return user.getEmail();
-    } // Retorna o nome de usuário do usuário que criamos anteriormente
+    }
 
     @Override
     public boolean isAccountNonExpired() {

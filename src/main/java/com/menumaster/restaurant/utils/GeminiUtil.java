@@ -2,6 +2,8 @@ package com.menumaster.restaurant.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URI;
@@ -11,20 +13,17 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class GeminiUtil {
 
-    private static String apiKey = "AIzaSyBj7D_d69IKHIDnXEkUdcuZ-WCkm8dZxtU";
-    private static String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey;
+    private final String url;
 
-    public static String sendRequest(String prompt) throws IOException, InterruptedException {
-        Map<String, Object> generationConfig = Map.of(
-                "temperature", 1,
-                "top_p", 0.95,
-                "top_k", 64,
-                "max_output_tokens", 8192,
-                "response_mime_type", "text/plain"
-        );
+    public GeminiUtil(@Value("${gemini.api.key}") String apiKey,
+                      @Value("${gemini.api.url}") String url) {
+        this.url = url + apiKey;
+    }
 
+    public String sendRequest(String prompt) throws IOException, InterruptedException {
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
                         Map.of(
@@ -35,7 +34,6 @@ public class GeminiUtil {
                 )
         );
 
-        // Serialização do corpo da requisição para JSON
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonInput = objectMapper.writeValueAsString(requestBody);
 
@@ -46,10 +44,8 @@ public class GeminiUtil {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonInput))
                 .build();
 
-        // Envio da requisição e impressão da resposta
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println("Response: " + response.body());
+
         return response.body();
     }
-
 }

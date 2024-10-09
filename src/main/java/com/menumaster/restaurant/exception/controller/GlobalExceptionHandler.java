@@ -1,10 +1,7 @@
 package com.menumaster.restaurant.exception.controller;
 
 import com.menumaster.restaurant.exception.config.ErrorDescription;
-import com.menumaster.restaurant.exception.type.DuplicateKeyException;
-import com.menumaster.restaurant.exception.type.EntityNotFoundException;
-import com.menumaster.restaurant.exception.type.UploadImageException;
-import com.menumaster.restaurant.exception.type.ValidationException;
+import com.menumaster.restaurant.exception.type.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +19,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorDescription> handleEntityNotFoundException(EntityNotFoundException ex) {
+        ErrorDescription errorResponse = new ErrorDescription(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(ImageException.class)
+    public ResponseEntity<ErrorDescription> handleImageEncodingException(ImageException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage()

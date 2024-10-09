@@ -23,7 +23,7 @@ public record DishFormDTO(
         Double reaisCostValue,
 
         @NotBlank
-        String urlImage,
+        String image,
 
         @NotNull
         Boolean isAvailable,

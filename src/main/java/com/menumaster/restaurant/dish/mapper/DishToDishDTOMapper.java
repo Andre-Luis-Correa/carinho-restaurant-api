@@ -12,5 +12,6 @@ import java.util.List;
 public interface DishToDishDTOMapper {
 
     @Mapping(source = "dishIngredientDTOList", target = "dishIngredientDTOList")
-    DishDTO convert(Dish dish, List<DishIngredientDTO> dishIngredientDTOList);
+    @Mapping(source = "encodedImage", target = "image")
+    DishDTO convert(Dish dish, List<DishIngredientDTO> dishIngredientDTOList, String encodedImage);
 }

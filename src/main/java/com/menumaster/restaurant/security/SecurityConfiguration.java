@@ -59,19 +59,14 @@ public class SecurityConfiguration {
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
-            // authentication
-            "/authentication/test"
+
     };
 
     public static final String[] ENDPOINTS_CUSTOMER = {
-            // authentication
-            "/authentication/test-customer"
+
     };
 
     public static final String[] ENDPOINTS_ADMIN = {
-            // authentication
-            "/authentication/test-administrator",
-
             // category
             "/category/create",
             "/category/update/{id}",
@@ -96,8 +91,7 @@ public class SecurityConfiguration {
     };
 
     public static final String[] ENDPOINTS_ATTENDANT = {
-            // authentication
-            "/authentication/test-attendant"
+
     };
 
 

@@ -17,6 +17,7 @@ import com.menumaster.restaurant.exception.type.DuplicateKeyException;
 import com.menumaster.restaurant.exception.type.EntityNotFoundException;
 import com.menumaster.restaurant.exception.type.UploadImageException;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
+import com.menumaster.restaurant.utils.ImageUtil;
 import com.menumaster.restaurant.utils.UploadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,22 +38,24 @@ public class DishService {
     private final DishToDishDTOMapper dishToDishDTOMapper;
     private final DishIngredientFormDTOToDishIngredientMapper dishIngredientFormDTOToDishIngredientMapper;
     private final DishIngredientToDishIngredientDTOMapper dishIngredientToDishIngredientDTOMapper;
+    private final ImageUtil imageUtil;
 
-    public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO, MultipartFile dishImage) {
+    public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {
         Dish dishToBeSaved = convertDishFormDTOToDish(dishFormDTO);
         dishToBeSaved.setCategory(category);
+
+        MultipartFile dishImage = imageUtil.convertBase64ToMultipartFile(dishFormDTO.image(), "dish_image.png");
         uploadDishImage(dishToBeSaved, dishImage);
+
         Dish dishSaved = dishRepository.save(dishToBeSaved);
-
         saveDishIngredientList(dishIngredientList, dishSaved);
-
         return convertDishToDishDTO(dishSaved);
     }
 
     private void uploadDishImage(Dish dish, MultipartFile dishImage) {
         try {
-            if(UploadUtil.makeImageUpload(dishImage)) {
-                dish.setUrlImage(dishImage.getOriginalFilename());
+            if (UploadUtil.makeImageUpload(dishImage)) {
+                dish.setImage(dishImage.getOriginalFilename());
             }
         } catch (Exception e) {
             throw new UploadImageException("Erro ao realizar upload da imagem do prato.");
@@ -62,7 +65,11 @@ public class DishService {
     public DishDTO convertDishToDishDTO(Dish dish) {
         List<DishIngredient> dishIngredientList = dishIngredientRepository.findAllByDish(dish);
         List<DishIngredientDTO> dishIngredientDTOList = convertDishIngredientToDishIngredientDTO(dishIngredientList);
-        return dishToDishDTOMapper.convert(dish, dishIngredientDTOList);
+        String encodedImage = imageUtil.encodeImageToBase64(dish.getImage());
+
+        DishDTO dishDTO = dishToDishDTOMapper.convert(dish, dishIngredientDTOList, encodedImage);
+
+        return dishDTO;
     }
 
     private List<DishIngredientDTO> convertDishIngredientToDishIngredientDTO(List<DishIngredient> dishIngredientList) {
@@ -91,7 +98,7 @@ public class DishService {
         return dishRepository.findById(id).orElseThrow( () -> new EntityNotFoundException("Dish", id.toString()));
     }
 
-    public DishDTO update(Dish dish, Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) {
+    public DishDTO update(Dish dish, Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {
         if(dishFormDTO.name() != null && !dishFormDTO.name().isBlank()) {
             dish.setName(dishFormDTO.name());
         }
@@ -107,8 +114,10 @@ public class DishService {
         if(dishFormDTO.reaisCostValue() != null) {
             dish.setReaisCostValue(dishFormDTO.reaisCostValue());
         }
-        if(dishFormDTO.urlImage() != null && !dishFormDTO.urlImage().isBlank()) {
-            dish.setUrlImage(dishFormDTO.urlImage());
+        if(dishFormDTO.image() != null && !dishFormDTO.image().isBlank()) {
+            imageUtil.removeOldImage(dish.getImage());
+            MultipartFile newImage = imageUtil.convertBase64ToMultipartFile(dishFormDTO.image(), "dish_image.png");
+            uploadDishImage(dish, newImage);
         }
         if(dishFormDTO.isAvailable() != null) {
             dish.setIsAvailable(dishFormDTO.isAvailable());

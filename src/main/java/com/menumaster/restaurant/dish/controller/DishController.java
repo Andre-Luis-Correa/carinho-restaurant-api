@@ -19,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,9 +33,10 @@ public class DishController {
     private final DishService dishService;
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
+    private final GeminiUtil geminiUtil;
 
     @PostMapping("/create")
-    public ResponseEntity<DishDTO> create(@Valid DishFormDTO dishFormDTO, MultipartFile dishImage) {
+    public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) throws IOException {
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
         dishService.verifyNoDuplicatedIngredients(dishFormDTO.dishIngredientFormDTOList());
@@ -48,11 +48,11 @@ public class DishController {
             dishIngredientList.add(dishIngredient);
         }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(dishService.create(category, dishIngredientList, dishFormDTO, dishImage));
+        return ResponseEntity.status(HttpStatus.CREATED).body(dishService.create(category, dishIngredientList, dishFormDTO));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<DishDTO> update(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) {
+    public ResponseEntity<DishDTO> update(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) throws IOException {
         Dish dish = dishService.getOrThrowException(id);
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
@@ -93,6 +93,6 @@ public class DishController {
 
     @PostMapping("/chat")
     public ResponseEntity<String> talkToGemini(String prompt) throws IOException, InterruptedException {
-        return ResponseEntity.status(HttpStatus.OK).body(GeminiUtil.sendRequest(prompt));
+        return ResponseEntity.status(HttpStatus.OK).body(geminiUtil.sendRequest(prompt));
     }
 }

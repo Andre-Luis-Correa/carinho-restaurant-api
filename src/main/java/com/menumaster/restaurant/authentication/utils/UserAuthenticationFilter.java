@@ -27,11 +27,10 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final UserRepository userRepository;
-    private final UserDetailsService userDetailsService; // Assuming you have a user details service
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // Check if the endpoint requires authentication
         if (checkIfEndpointIsNotPublic(request)) {
             String token = recoveryToken(request);
             if (token != null) {
@@ -42,19 +41,16 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
                     User user = userOptional.get();
                     UserDetails userDetails = new UserDetailsImpl(user);
 
-                    // Create an authentication token
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                    // Set the authentication in the security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
         }
-        filterChain.doFilter(request, response); // Continue the request processing
+        filterChain.doFilter(request, response);
     }
 
-    // Retrieve the token from the Authorization header
     private String recoveryToken(HttpServletRequest request) {
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
@@ -63,7 +59,6 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    // Check if the endpoint requires authentication
     private boolean checkIfEndpointIsNotPublic(HttpServletRequest request) {
         String requestURI = request.getRequestURI();
         return !Arrays.asList(SecurityConfiguration.ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED).contains(requestURI);
