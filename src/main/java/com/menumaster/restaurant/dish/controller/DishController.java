@@ -91,7 +91,7 @@ public class DishController {
         return ResponseEntity.status(HttpStatus.OK).body(dishService.convertDishToDishDTO(dish));
     }
 
-    @PostMapping
+    @PostMapping("/chat")
     public ResponseEntity<String> talkToGemini(String prompt) throws IOException, InterruptedException {
         return ResponseEntity.status(HttpStatus.OK).body(GeminiUtil.sendRequest(prompt));
     }

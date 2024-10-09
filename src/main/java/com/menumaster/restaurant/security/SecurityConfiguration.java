@@ -55,7 +55,7 @@ public class SecurityConfiguration {
             "/dish/get/{id}",
 
             // gemini
-            "/chat"
+            "/dish/chat"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
