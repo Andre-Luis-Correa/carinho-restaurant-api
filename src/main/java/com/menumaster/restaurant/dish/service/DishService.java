@@ -39,6 +39,7 @@ public class DishService {
     private final DishIngredientFormDTOToDishIngredientMapper dishIngredientFormDTOToDishIngredientMapper;
     private final DishIngredientToDishIngredientDTOMapper dishIngredientToDishIngredientDTOMapper;
     private final ImageUtil imageUtil;
+    private final UploadUtil uploadUtil;
 
     public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {
         Dish dishToBeSaved = convertDishFormDTOToDish(dishFormDTO);
@@ -54,7 +55,7 @@ public class DishService {
 
     private void uploadDishImage(Dish dish, MultipartFile dishImage) {
         try {
-            if (UploadUtil.makeImageUpload(dishImage)) {
+            if (uploadUtil.makeImageUpload(dishImage)) {
                 dish.setImage(dishImage.getOriginalFilename());
             }
         } catch (Exception e) {

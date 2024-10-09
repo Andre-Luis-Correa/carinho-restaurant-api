@@ -1,22 +1,31 @@
 package com.menumaster.restaurant.utils;
 
 import com.menumaster.restaurant.exception.type.UploadImageException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 
+@Component
 public class UploadUtil {
 
-    public static boolean makeImageUpload(MultipartFile image) {
+    private final String imagesPath;
+
+    public UploadUtil(@Value("${dish.images.path}") String imagesPath) {
+        this.imagesPath = imagesPath;
+    }
+
+    public boolean makeImageUpload(MultipartFile image) {
         boolean successfulUpload = false;
 
         if(!image.isEmpty()) {
             String fileName = image.getOriginalFilename();
-            String uploadFolderPath = "C:\\Users\\andre\\IdeaProjects\\restaurant\\src\\main\\resources\\images\\dishimages";
+
             try {
-                File dir = new File(uploadFolderPath);
+                File dir = new File(imagesPath);
 
                 if(!dir.exists()) {
                     dir.mkdirs();
@@ -28,7 +37,7 @@ public class UploadUtil {
                 bufferedOutputStream.close();
                 successfulUpload = true;
             } catch (Exception e) {
-                throw new UploadImageException(uploadFolderPath, fileName);
+                throw new UploadImageException(imagesPath, fileName);
             }
         } else {
             throw new UploadImageException("Falha ao realizar upload de imagem, pois ela está vazia");
