@@ -36,7 +36,7 @@ public class DishController {
     private final IngredientService ingredientService;
 
     @PostMapping("/create")
-    public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO, @RequestParam MultipartFile dishImage) {
+    public ResponseEntity<DishDTO> create(@Valid DishFormDTO dishFormDTO, MultipartFile dishImage) {
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
         dishService.verifyNoDuplicatedIngredients(dishFormDTO.dishIngredientFormDTOList());
@@ -51,7 +51,7 @@ public class DishController {
         return ResponseEntity.status(HttpStatus.CREATED).body(dishService.create(category, dishIngredientList, dishFormDTO, dishImage));
     }
 
-    @PutMapping("/chat")
+    @PutMapping("/update/{id}")
     public ResponseEntity<DishDTO> update(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) {
         Dish dish = dishService.getOrThrowException(id);
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
