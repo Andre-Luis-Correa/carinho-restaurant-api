@@ -13,16 +13,18 @@ import com.menumaster.restaurant.dish.mapper.DishIngredientToDishIngredientDTOMa
 import com.menumaster.restaurant.dish.mapper.DishToDishDTOMapper;
 import com.menumaster.restaurant.dish.repository.DishIngredientRepository;
 import com.menumaster.restaurant.dish.repository.DishRepository;
+import com.menumaster.restaurant.exception.type.DuplicateKeyException;
 import com.menumaster.restaurant.exception.type.EntityNotFoundException;
+import com.menumaster.restaurant.exception.type.UploadImageException;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
+import com.menumaster.restaurant.utils.UploadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,14 +38,25 @@ public class DishService {
     private final DishIngredientFormDTOToDishIngredientMapper dishIngredientFormDTOToDishIngredientMapper;
     private final DishIngredientToDishIngredientDTOMapper dishIngredientToDishIngredientDTOMapper;
 
-    public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) {
+    public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO, MultipartFile dishImage) {
         Dish dishToBeSaved = convertDishFormDTOToDish(dishFormDTO);
         dishToBeSaved.setCategory(category);
+        uploadDishImage(dishToBeSaved, dishImage);
         Dish dishSaved = dishRepository.save(dishToBeSaved);
 
         saveDishIngredientList(dishIngredientList, dishSaved);
 
         return convertDishToDishDTO(dishSaved);
+    }
+
+    private void uploadDishImage(Dish dish, MultipartFile dishImage) {
+        try {
+            if(UploadUtil.makeImageUpload(dishImage)) {
+                dish.setUrlImage(dishImage.getOriginalFilename());
+            }
+        } catch (Exception e) {
+            throw new UploadImageException("Erro ao realizar upload da imagem do prato.");
+        }
     }
 
     public DishDTO convertDishToDishDTO(Dish dish) {
@@ -112,25 +125,9 @@ public class DishService {
 
     private void updateDishIngredientList(Dish dish, List<DishIngredient> newDishIngredientList) {
         List<DishIngredient> existingDishIngredients = dishIngredientRepository.findAllByDish(dish);
+        dishIngredientRepository.deleteAll(existingDishIngredients);
 
-        Map<Long, DishIngredient> newIngredientsMap = newDishIngredientList.stream()
-                .collect(Collectors.toMap(di -> di.getIngredient().getId(), di -> di));
-
-        Iterator<DishIngredient> iterator = existingDishIngredients.iterator();
-
-        while (iterator.hasNext()) {
-            DishIngredient existingIngredient = iterator.next();
-            Long ingredientId = existingIngredient.getIngredient().getId();
-
-            if (newIngredientsMap.containsKey(ingredientId)) {
-                DishIngredient newIngredient = newIngredientsMap.get(ingredientId);
-                existingIngredient.setQuantity(newIngredient.getQuantity());
-                dishIngredientRepository.save(existingIngredient);
-                newIngredientsMap.remove(ingredientId);
-            }
-        }
-
-        for (DishIngredient newIngredient : newIngredientsMap.values()) {
+        for (DishIngredient newIngredient : newDishIngredientList) {
             newIngredient.setDish(dish);
             newIngredient.setIngredient(newIngredient.getIngredient());
             newIngredient.setQuantity(newIngredient.getQuantity());
@@ -169,5 +166,14 @@ public class DishService {
     public DishIngredient getOrThrowExceptionByDishIngredientId(Long id) {
         return dishIngredientRepository.findById(id).orElseThrow( () -> new EntityNotFoundException("DishIngredient", id.toString()));
 
+    }
+
+    public void verifyNoDuplicatedIngredients(List<DishIngredientFormDTO> dishIngredientFormDTOList) {
+        Set<Long> ingredientIds = new HashSet<>();
+        for (DishIngredientFormDTO dishIngredientFormDTO : dishIngredientFormDTOList) {
+            if (!ingredientIds.add(dishIngredientFormDTO.ingredientId())) {
+                throw new DuplicateKeyException("O ingrediente com ID " + dishIngredientFormDTO.ingredientId() + " foi informado mais de uma vez.");
+            }
+        }
     }
 }

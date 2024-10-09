@@ -52,7 +52,10 @@ public class SecurityConfiguration {
             // dish
             "/dish/list",
             "/dish/page",
-            "/dish/get/{id}"
+            "/dish/get/{id}",
+
+            // gemini
+            "/chat"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {

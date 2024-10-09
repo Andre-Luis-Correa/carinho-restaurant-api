@@ -10,6 +10,7 @@ import com.menumaster.restaurant.dish.domain.model.DishIngredient;
 import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
+import com.menumaster.restaurant.utils.GeminiUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -18,7 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,26 +36,29 @@ public class DishController {
     private final IngredientService ingredientService;
 
     @PostMapping("/create")
-    public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) {
+    public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO, @RequestParam MultipartFile dishImage) {
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
-        List<DishIngredient> dishIngredientList = new ArrayList<>();
 
+        dishService.verifyNoDuplicatedIngredients(dishFormDTO.dishIngredientFormDTOList());
+
+        List<DishIngredient> dishIngredientList = new ArrayList<>();
         for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
             Ingredient ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
             DishIngredient dishIngredient = dishService.convertToDishIngredient(null, ingredient, dishIngredientFormDTO);
             dishIngredientList.add(dishIngredient);
         }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(dishService.create(category, dishIngredientList, dishFormDTO));
+        return ResponseEntity.status(HttpStatus.CREATED).body(dishService.create(category, dishIngredientList, dishFormDTO, dishImage));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<DishDTO> create(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) {
+    @PutMapping("/chat")
+    public ResponseEntity<DishDTO> update(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) {
         Dish dish = dishService.getOrThrowException(id);
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
-        List<DishIngredient> dishIngredientList = new ArrayList<>();
+        dishService.verifyNoDuplicatedIngredients(dishFormDTO.dishIngredientFormDTOList());
 
+        List<DishIngredient> dishIngredientList = new ArrayList<>();
         for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
             Ingredient ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
             DishIngredient dishIngredient = dishService.convertToDishIngredient(dish, ingredient, dishIngredientFormDTO);
@@ -60,20 +66,6 @@ public class DishController {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(dishService.update(dish, category, dishIngredientList, dishFormDTO));
-    }
-
-    @PutMapping("/remove-ingredient/{id}")
-    public ResponseEntity<DishDTO> removeDishIngredient(@PathVariable Long id, @RequestBody List<Long> dishIngredientIdsList) {
-        Dish dish = dishService.getOrThrowException(id);
-
-        List<DishIngredient> dishIngredientList = new ArrayList<>();
-
-        for(Long dishIngredientId: dishIngredientIdsList) {
-            DishIngredient dishIngredient = dishService.getOrThrowExceptionByDishIngredientId(dishIngredientId);
-            dishIngredientList.add(dishIngredient);
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(dishService.removeDishIngredient(dish, dishIngredientList));
     }
 
     @DeleteMapping("/delete/{id}")
@@ -97,5 +89,10 @@ public class DishController {
     public ResponseEntity<DishDTO> getDishDTOById(@PathVariable Long id) {
         Dish dish = dishService.getOrThrowException(id);
         return ResponseEntity.status(HttpStatus.OK).body(dishService.convertDishToDishDTO(dish));
+    }
+
+    @PostMapping
+    public ResponseEntity<String> talkToGemini(String prompt) throws IOException, InterruptedException {
+        return ResponseEntity.status(HttpStatus.OK).body(GeminiUtil.sendRequest(prompt));
     }
 }
