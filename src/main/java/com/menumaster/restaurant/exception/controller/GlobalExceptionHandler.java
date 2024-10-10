@@ -26,6 +26,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(GoogleCredentialsException.class)
+    public ResponseEntity<ErrorDescription> handleGoogleCredentialsException(GoogleCredentialsException ex) {
+        ErrorDescription errorResponse = new ErrorDescription(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(ImageException.class)
     public ResponseEntity<ErrorDescription> handleImageEncodingException(ImageException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
