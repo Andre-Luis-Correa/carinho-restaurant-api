@@ -17,6 +17,7 @@ import com.menumaster.restaurant.exception.type.DuplicateKeyException;
 import com.menumaster.restaurant.exception.type.EntityNotFoundException;
 import com.menumaster.restaurant.exception.type.UploadImageException;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
+import com.menumaster.restaurant.utils.ImageUploadService;
 import com.menumaster.restaurant.utils.ImageUtil;
 import com.menumaster.restaurant.utils.UploadUtil;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,7 @@ public class DishService {
     private final DishIngredientToDishIngredientDTOMapper dishIngredientToDishIngredientDTOMapper;
     private final ImageUtil imageUtil;
     private final UploadUtil uploadUtil;
+    private final ImageUploadService imageUploadService;
 
     public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {
         Dish dishToBeSaved = convertDishFormDTOToDish(dishFormDTO);
@@ -53,23 +57,42 @@ public class DishService {
         return convertDishToDishDTO(dishSaved);
     }
 
+    //    private void uploadDishImage(Dish dish, MultipartFile dishImage) {
+//        try {
+//            if (uploadUtil.makeImageUpload(dishImage)) {
+//                dish.setImage(dishImage.getOriginalFilename());
+//            }
+//        } catch (Exception e) {
+//            throw new UploadImageException("Erro ao realizar upload da imagem do prato.");
+//        }
+//    }
     private void uploadDishImage(Dish dish, MultipartFile dishImage) {
         try {
-            if (uploadUtil.makeImageUpload(dishImage)) {
-                dish.setImage(dishImage.getOriginalFilename());
-            }
+            String uploadedFileName = imageUploadService.uploadImage(dishImage);
+            dish.setImage(uploadedFileName); // Store only the file name in the database
         } catch (Exception e) {
             throw new UploadImageException("Erro ao realizar upload da imagem do prato.");
         }
     }
 
+//    public DishDTO convertDishToDishDTO(Dish dish) {
+//        List<DishIngredient> dishIngredientList = dishIngredientRepository.findAllByDish(dish);
+//        List<DishIngredientDTO> dishIngredientDTOList = convertDishIngredientToDishIngredientDTO(dishIngredientList);
+//        String encodedImage = imageUtil.encodeImageToBase64(dish.getImage());
+//
+//        DishDTO dishDTO = dishToDishDTOMapper.convert(dish, dishIngredientDTOList, encodedImage);
+//
+//        return dishDTO;
+//    }
+
     public DishDTO convertDishToDishDTO(Dish dish) {
         List<DishIngredient> dishIngredientList = dishIngredientRepository.findAllByDish(dish);
         List<DishIngredientDTO> dishIngredientDTOList = convertDishIngredientToDishIngredientDTO(dishIngredientList);
-        String encodedImage = imageUtil.encodeImageToBase64(dish.getImage());
+
+        // Retrieve the image from storage using its file name and encode it to Base64
+        String encodedImage = imageUploadService.encodeImageToBase64(dish.getImage());
 
         DishDTO dishDTO = dishToDishDTOMapper.convert(dish, dishIngredientDTOList, encodedImage);
-
         return dishDTO;
     }
 
@@ -78,7 +101,7 @@ public class DishService {
     }
 
     private List<DishIngredient> saveDishIngredientList(List<DishIngredient> dishIngredientList, Dish dish) {
-        for(DishIngredient dishIngredient : dishIngredientList) {
+        for (DishIngredient dishIngredient : dishIngredientList) {
             dishIngredient.setDish(dish);
         }
         return dishIngredientRepository.saveAll(dishIngredientList);
@@ -96,34 +119,34 @@ public class DishService {
     }
 
     public Dish getOrThrowException(Long id) {
-        return dishRepository.findById(id).orElseThrow( () -> new EntityNotFoundException("Dish", id.toString()));
+        return dishRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Dish", id.toString()));
     }
 
     public DishDTO update(Dish dish, Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {
-        if(dishFormDTO.name() != null && !dishFormDTO.name().isBlank()) {
+        if (dishFormDTO.name() != null && !dishFormDTO.name().isBlank()) {
             dish.setName(dishFormDTO.name());
         }
-        if(dishFormDTO.description() != null && !dishFormDTO.description().isBlank()) {
+        if (dishFormDTO.description() != null && !dishFormDTO.description().isBlank()) {
             dish.setDescription(dishFormDTO.description());
         }
-        if(dishFormDTO.reaisPrice() != null) {
+        if (dishFormDTO.reaisPrice() != null) {
             dish.setReaisPrice(dishFormDTO.reaisPrice());
         }
-        if(dishFormDTO.pointsPrice() != null) {
+        if (dishFormDTO.pointsPrice() != null) {
             dish.setPointsPrice(dishFormDTO.pointsPrice());
         }
-        if(dishFormDTO.reaisCostValue() != null) {
+        if (dishFormDTO.reaisCostValue() != null) {
             dish.setReaisCostValue(dishFormDTO.reaisCostValue());
         }
-        if(dishFormDTO.image() != null && !dishFormDTO.image().isBlank()) {
+        if (dishFormDTO.image() != null && !dishFormDTO.image().isBlank()) {
             imageUtil.removeOldImage(dish.getImage());
             MultipartFile newImage = imageUtil.convertBase64ToMultipartFile(dishFormDTO.image(), "dish_image.png");
             uploadDishImage(dish, newImage);
         }
-        if(dishFormDTO.isAvailable() != null) {
+        if (dishFormDTO.isAvailable() != null) {
             dish.setIsAvailable(dishFormDTO.isAvailable());
         }
-        if(category != null) {
+        if (category != null) {
             dish.setCategory(category);
         }
 
@@ -164,8 +187,8 @@ public class DishService {
     public DishDTO removeDishIngredient(Dish dish, List<DishIngredient> dishIngredientList) {
         List<DishIngredient> dishIngredients = dishIngredientRepository.findAllByDish(dish);
 
-        for(DishIngredient dishIngredient : dishIngredientList) {
-            if(dishIngredients.contains(dishIngredient)) {
+        for (DishIngredient dishIngredient : dishIngredientList) {
+            if (dishIngredients.contains(dishIngredient)) {
                 dishIngredientRepository.delete(dishIngredient);
             }
         }
@@ -174,7 +197,7 @@ public class DishService {
     }
 
     public DishIngredient getOrThrowExceptionByDishIngredientId(Long id) {
-        return dishIngredientRepository.findById(id).orElseThrow( () -> new EntityNotFoundException("DishIngredient", id.toString()));
+        return dishIngredientRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("DishIngredient", id.toString()));
 
     }
 
