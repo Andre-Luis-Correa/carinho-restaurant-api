@@ -34,4 +34,4 @@ build/
 
 ### properties ###
 src/main/resources/application-dev.properties
-src/main/resources/*.json
+## src/main/resources/*.json
