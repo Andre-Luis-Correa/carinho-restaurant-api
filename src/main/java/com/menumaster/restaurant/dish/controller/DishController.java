@@ -10,6 +10,7 @@ import com.menumaster.restaurant.dish.domain.model.DishIngredient;
 import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
+import com.menumaster.restaurant.transcription.TranscriptionService;
 import com.menumaster.restaurant.utils.GeminiUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @RestController
@@ -34,6 +37,7 @@ public class DishController {
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
     private final GeminiUtil geminiUtil;
+    private final TranscriptionService transcriptionService;
 
     @PostMapping("/create")
     public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) throws IOException {
@@ -94,5 +98,21 @@ public class DishController {
     @PostMapping("/chat")
     public ResponseEntity<String> talkToGemini(String prompt) throws IOException, InterruptedException {
         return ResponseEntity.status(HttpStatus.OK).body(geminiUtil.sendRequest(prompt));
+    }
+
+    @PostMapping("/transcribe")
+    public ResponseEntity<String> transcribeAudio(@RequestParam("file") MultipartFile audioFile) {
+        try {
+            // Realiza o upload do arquivo e retorna a URI do GCS
+            String gcsUri = transcriptionService.uploadFileToGCS(audioFile);
+
+            // Realiza a transcrição do áudio usando a URI do GCS
+            String transcription = transcriptionService.transcribe(gcsUri);
+
+            // Retorna a transcrição obtida
+            return new ResponseEntity<>(transcription, HttpStatus.OK);
+        } catch (IOException e) {
+            return new ResponseEntity<>("Erro ao processar a transcrição do áudio: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
