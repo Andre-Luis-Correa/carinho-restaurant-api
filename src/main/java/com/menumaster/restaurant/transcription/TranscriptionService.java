@@ -1,5 +1,7 @@
 package com.menumaster.restaurant.transcription;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.longrunning.OperationFuture;
@@ -15,7 +17,12 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.PredictionServiceClient;
+import com.google.cloud.vertexai.generativeai.ContentMaker;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.PartMaker;
+import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.google.common.base.Supplier;
 import com.google.protobuf.ByteString;
 import com.menumaster.restaurant.exception.type.GoogleCredentialsException;
@@ -27,7 +34,11 @@ import org.threeten.bp.Duration;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -87,9 +98,11 @@ public class TranscriptionService {
 
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.MP3) // Configuração para MP3
+                //.setSampleRateHertz(44100)
+                .setSampleRateHertz(16000)
                 .setLanguageCode("pt-BR")
                 .setModel("default")
-                .setEnableAutomaticPunctuation(false)
+                //.setEnableAutomaticPunctuation(true)
                 .build();
 
         RecognitionAudio audio = RecognitionAudio.newBuilder().setUri(gcsUri).build();
@@ -120,46 +133,127 @@ public class TranscriptionService {
         }
     }
 
-    public String transcribe(String gcsUrl) {
-        log.info(gcsUrl);
+    public String transcribeAudioWithGemini(String audioUri) throws IOException {
+        try (VertexAI vertexAI = new VertexAI("projeto-esi", "southamerica-east1")) {
 
-        // Obtém o arquivo de áudio do bucket do Google Cloud Storage
-        Blob blob = storage.get(bucketName, gcsUrl.replace("gs://" + bucketName + "/", ""));
-        if (blob == null) {
-            System.err.println("Arquivo não encontrado no bucket: " + bucketName);
-            return null;
+            GenerativeModel model = new GenerativeModel("gemini-1.5-flash-002", vertexAI);
+            GenerateContentResponse response = model.generateContent(
+                    ContentMaker.fromMultiModalData(
+                            "Transcribe the audio",
+                            PartMaker.fromMimeTypeAndData("audio/mp3", audioUri)
+                    ));
+
+            String output = ResponseHandler.getText(response);
+            System.out.println(output);
+
+            return output;
         }
+    }
 
-        // Converte o conteúdo do Blob em um InputStream
-        try (InputStream inputStream = new BufferedInputStream(new ByteArrayInputStream(blob.getContent()))) {
-            // Cria a configuração de reconhecimento
-            RecognitionConfig config = RecognitionConfig.newBuilder()
-                    .setEncoding(RecognitionConfig.AudioEncoding.MP3)
-                    .setSampleRateHertz(44100)
-                    .setLanguageCode("pt-BR")
-                    .setModel("default")
-                    .setEnableAutomaticPunctuation(false)
-                    .build();
+    public String transcribeAudioWithGemini2(String audioUri) throws IOException, InterruptedException {
+        String endpoint = String.format(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", "AIzaSyBj7D_d69IKHIDnXEkUdcuZ-WCkm8dZxtU");
 
-            // Cria o objeto RecognitionAudio a partir do conteúdo do arquivo
-            RecognitionAudio audio = RecognitionAudio.newBuilder()
-                    .setContent(ByteString.readFrom(inputStream))
-                    .build();
+        // Criar o corpo da requisição JSON para transcrever o áudio
+        String requestBody = String.format("""
+                {
+                    "contents": {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "fileData": {
+                                    "mimeType": "audio/mp3",
+                                    "fileUri": "%s"
+                                }
+                            },
+                            {
+                                "text": "Transcribe this audio."
+                            }
+                        ]
+                    }
+                }
+                """, audioUri);
 
-            // Faz a transcrição do áudio usando o SpeechClient
-            RecognizeResponse response = speechClient.recognize(config, audio);
+        // Montar a requisição HTTP
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
 
-            // Extrai e retorna a transcrição do áudio
-            return response.getResultsList()
-                    .stream()
-                    .findFirst()
-                    .flatMap(result -> result.getAlternativesList().stream().findFirst())
-                    .map(SpeechRecognitionAlternative::getTranscript)
-                    .orElse("Nenhuma transcrição encontrada.");
-        } catch (IOException | ApiException e) {
+        // Criar o cliente HTTP e enviar a requisição
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Retornar a resposta da API como uma String
+        return response.body();
+    }
+
+    public String uploadAudio(MultipartFile audioFile) {
+        String apiKey = "AIzaSyBj7D_d69IKHIDnXEkUdcuZ-WCkm8dZxtU";
+        String mimeType = "audio/mpeg"; // Ajuste para o tipo MIME correto para arquivos MP3
+        long fileLength = audioFile.getSize();
+        String fileName = audioFile.getOriginalFilename();
+
+        try {
+            // Definir a URL de upload
+            URL url = new URL("https://generativelanguage.googleapis.com/upload/v1beta/files?key=" + apiKey);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("X-Goog-Upload-Command", "start, upload, finalize");
+            connection.setRequestProperty("X-Goog-Upload-Header-Content-Length", String.valueOf(fileLength));
+            connection.setRequestProperty("X-Goog-Upload-Header-Content-Type", mimeType); // Usando o tipo MIME correto
+            connection.setRequestProperty("Content-Type", mimeType); // Usando o tipo MIME correto
+
+            // Escrever os dados do arquivo no corpo da requisição
+            String jsonMetadata = String.format("{\"file\": {\"display_name\": \"%s\"}}", fileName);
+
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                // Escrever os metadados do arquivo
+                outputStream.write(jsonMetadata.getBytes());
+
+                // Escrever o arquivo binário no corpo da requisição
+                audioFile.getInputStream().transferTo(outputStream);
+                outputStream.flush();
+            }
+
+            // Ler a resposta do servidor
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            return extractFileUriFromJson(response.toString());
+
+        } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Erro ao transcrever o áudio: " + e.getMessage());
+            return "Erro ao enviar o arquivo: " + e.getMessage();
         }
-        return null;
+    }
+
+
+    public static String extractFileUriFromJson(String jsonString) {
+        try {
+            // Cria um ObjectMapper para manipular o JSON
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            // Converte a string JSON para um objeto JsonNode
+            JsonNode rootNode = objectMapper.readTree(jsonString);
+
+            // Navega até o campo "uri" dentro da estrutura do JSON
+            JsonNode uriNode = rootNode
+                    .path("file")
+                    .path("uri");
+
+            // Retorna o URI extraído ou uma mensagem se não encontrado
+            return uriNode.asText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Erro ao processar o JSON.";
+        }
     }
 }

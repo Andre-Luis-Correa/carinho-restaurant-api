@@ -107,12 +107,38 @@ public class DishController {
             String gcsUri = transcriptionService.uploadFileToGCS(audioFile);
 
             // Realiza a transcrição do áudio usando a URI do GCS
-            String transcription = transcriptionService.transcribe(gcsUri);
+            //String transcription = transcriptionService.transcribeAudio(gcsUri);
+
+            String transcription = transcriptionService.transcribeAudio(gcsUri);
 
             // Retorna a transcrição obtida
             return new ResponseEntity<>(transcription, HttpStatus.OK);
         } catch (IOException e) {
             return new ResponseEntity<>("Erro ao processar a transcrição do áudio: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping("/transcribe-gemini")
+    public String transcribeAudioWithGemini(@RequestParam("file") MultipartFile audioFile) {
+        // Primeiro, fazemos o upload do áudio e obtemos o URI
+        String fileUri = transcriptionService.uploadAudio(audioFile);
+
+        if (fileUri.startsWith("Erro")) {
+            // Se ocorrer um erro durante o upload, retorne o erro
+            return fileUri;
+        }
+
+        try {
+            // Envia o URI para a transcrição do áudio e retorna a resposta
+            String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
+            return transcriptionResponse;
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return "Erro ao transcrever o áudio: " + e.getMessage();
         }
     }
 }
