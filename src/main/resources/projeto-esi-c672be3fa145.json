@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "projeto-esi",
+  "private_key_id": "c672be3fa145187954901c1aa17e3eb45f2cc165",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQChN9ppjLqriyyb\nXCm55HPg36JXzwCgWDaXkU/F/eD6Tg/WIZaigUMApPdxtb7RKqzyTVgKbtERn8NV\nIbpt/2KSYe4/TDWuOB82AWRaKW+10QG0Bg5cEGKP9OcfRIVqd/0ujY4s7iHeCVey\nzOMT5xtfvxETSPzz4CqwoDfah7VV/khFH2bb5PNX36b2NyWRASDzyGxKOE9OIRvx\ng4A0ds47/pCmlRYh3XsLfBe8xhKx+MtJZGAuA7GC8l4FfQVlNLmCh2aWrUl22RUf\naNiC5B/G6wNO2Vs4k7m+X0d1bKcrx1AtT8Rcob4uX88IJawQ6XmHnO/SER/IbJwT\n8py+iUqBAgMBAAECggEAMRD4rmsgXRlMiDQyltsK0YP+us7LmAGBC/wz1USBdmzP\nsRIj8G164PVUQg1Yd/yPCmezxekYRE7lekF7pgK2E2suwaEGLXHzPdKKok4+K43j\nANFfCXILLVkSBpgqKs8+BS8b+Fy5fgRF5qso6WPLFwblwYLTSb4OABejKCVpcTQo\ngQYqbCj+K3QLC+JcW7y9widDN1WBYCmXI5eQz4OHCffz8W/Ms/OUd5EjpIOxFWoo\nv/DSVy9XkZNoHkdBiRclR1tApjhLN91dNPwiLFv89BZMLdUXo3O1mC3QmIMw4lJl\nDgk93KNtIm9xC+XmHilFZ1WZonyIL+FoiNZ2gLXjqQKBgQDjl6GIJaS5v3RjTHTz\nGZbmJS81CLzgrKWonsKXCaU4z+5wACioCGOA1nWJ3d1z1D7DvD0xaWGs/8i2fi4S\nE22Ok6dpE21qiMpPhkthGD4VPvXMvKwdFyMBm6zvIiU8ou0CPCCXCe4MZZcyUdOX\ntvIN5g2Akr9MVRg7gnrEDqmw7wKBgQC1V1Y+YJMBF22RcSpVm0LIT3iSlFvtQwG8\nT8RR1TULjwmb0bshYI0Ye3EKZaE2tieByY71yDsMYYyP6rU+uz6TmykYrXahcyvX\naHrwcOjrIvVw1rKM2fWsQIgvoqAjE9XsSmGeWLe6OzXDw4Cktv/5UWHVW9YKOTgv\n3tKYjM3bjwKBgAnve6jC4+8L8ZvIIa7fJhxD8UyiZgR05QJ4c8w+Ko1RXnpbN2sm\nepmMQzNSkTFWSasn05ANpqrzu6Jj3cUCPh0kSwGmTHeDIznXhgDmGwe4aOiYL/dR\nJEEUt7b0yaVdA3W+hDmzwEWgRbp3ogIUhXqf2WUMgvdlG5q1doCKl1PXAoGANdti\nedQk1MYofHGnqRUbmHJB1QbK5oRoF415OPShdHVe3TBE63zJauP+hp/4aU9gHGPI\nWabGIr82B+glPCRQSXZjljiuavTRqIAXQyHFi1AupPyeusZg+G+SAtPBy6kwd6T/\nqQ+gQWckaKe/pSvUii9pZvyHbTHhRhZfZX8sBHECgYEAlSMJ4XqHvbhCUuliLyzI\nkpuziytuSCyzAKHHEClE/BZ/Iie77cT+cApgmLF8PRxWrDcMZBke6gH8PPdIWOYB\nrG+emE9Mj79fDewFi5cBzIoAixXWraD9sgYmzEz2QdO8Xful8jXyJrAlZ29bdzja\nt+kZAY/It+kJxb5eaTjXh4M=\n-----END PRIVATE KEY-----\n",
+  "client_email": "speech-client@projeto-esi.iam.gserviceaccount.com",
+  "client_id": "102737064014445489291",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/speech-client%40projeto-esi.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
