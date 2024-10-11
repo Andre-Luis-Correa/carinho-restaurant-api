@@ -1,10 +1,10 @@
-package com.menumaster.restaurant.utils;
+package com.menumaster.restaurant.gemini;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
@@ -14,14 +14,15 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
-@Component
-public class GeminiUtil {
+@Service
+public class GeminiService {
 
-    private final String url;
+    private final String geminiQuestionUrl;
 
-    public GeminiUtil(@Value("${gemini.api.key}") String apiKey,
-                      @Value("${gemini.api.url}") String url) {
-        this.url = url + apiKey;
+    public GeminiService(@Value("${gemini.api.key}") String apiKey,
+                         @Value("${gemini.question.api.url}") String geminiQuestionUrl) {
+
+        this.geminiQuestionUrl = geminiQuestionUrl + apiKey;
     }
 
     public String sendRequest(String prompt) throws IOException, InterruptedException {
@@ -40,7 +41,7 @@ public class GeminiUtil {
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
+                .uri(URI.create(geminiQuestionUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonInput))
                 .build();
@@ -52,13 +53,10 @@ public class GeminiUtil {
 
     public static String extractTextFromJson(String jsonString) {
         try {
-            // Cria um ObjectMapper para manipular o JSON
             ObjectMapper objectMapper = new ObjectMapper();
 
-            // Converte a string JSON para um objeto JsonNode
             JsonNode rootNode = objectMapper.readTree(jsonString);
 
-            // Navega até o campo "text" dentro da estrutura do JSON
             JsonNode textNode = rootNode
                     .path("candidates")
                     .get(0)
@@ -67,7 +65,6 @@ public class GeminiUtil {
                     .get(0)
                     .path("text");
 
-            // Retorna o texto extraído ou uma mensagem se não encontrado
             return textNode.asText();
         } catch (Exception e) {
             e.printStackTrace();

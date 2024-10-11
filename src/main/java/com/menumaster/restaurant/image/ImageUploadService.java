@@ -22,7 +22,7 @@ public class ImageUploadService {
     @Value("${gcp.bucket.id}")
     private String bucketName;
 
-    @Value("${gcp.dir.name}")
+    @Value("${gcp.dir.images.name}")
     private String gcpDirectoryName;
 
     private Storage storage;

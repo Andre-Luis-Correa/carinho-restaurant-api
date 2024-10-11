@@ -11,7 +11,7 @@ import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.transcription.TranscriptionService;
-import com.menumaster.restaurant.utils.GeminiUtil;
+import com.menumaster.restaurant.gemini.GeminiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -36,7 +36,7 @@ public class DishController {
     private final DishService dishService;
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
-    private final GeminiUtil geminiUtil;
+    private final GeminiService geminiService;
     private final TranscriptionService transcriptionService;
 
     @PostMapping("/create")
@@ -97,7 +97,7 @@ public class DishController {
 
     @PostMapping("/chat")
     public ResponseEntity<String> talkToGemini(String prompt) throws IOException, InterruptedException {
-        return ResponseEntity.status(HttpStatus.OK).body(geminiUtil.sendRequest(prompt));
+        return ResponseEntity.status(HttpStatus.OK).body(geminiService.sendRequest(prompt));
     }
 
     @PostMapping("/transcribe")
