@@ -147,7 +147,28 @@ public class TranscriptionService {
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response.body();
+        return extractTextFromJson(response.body());
+    }
+
+    public static String extractTextFromJson(String response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            JsonNode rootNode = objectMapper.readTree(response);
+
+            JsonNode textNode = rootNode
+                    .path("candidates")
+                    .get(0)
+                    .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text");
+
+            return textNode.asText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Erro ao processar o JSON.";
+        }
     }
 
     public String uploadAudio(MultipartFile audioFile) {
