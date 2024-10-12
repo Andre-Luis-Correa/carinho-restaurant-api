@@ -1,32 +1,26 @@
-# Use a imagem oficial do Maven com Java 17 para criar o artefato de build
-FROM maven:3-eclipse-temurin-17-slim AS build
+# Usa a imagem base do Eclipse Temurin com JDK 17
+FROM eclipse-temurin:17-jdk-jammy
 
 # Define o diretório de trabalho como /app
 WORKDIR /app
 
-# Copia o arquivo pom.xml e as configurações do Maven para a imagem
-COPY pom.xml ./
+# Copia o diretório .mvn e o arquivo pom.xml para a imagem
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
 
-# Baixa as dependências para acelerar builds futuros
-RUN mvn dependency:go-offline -B
+# Dá permissão de execução para o script mvnw
+RUN chmod +x ./mvnw
 
-# Copiatodo o código-fonte para a imagem
+# Converte as quebras de linha do mvnw durante o build (caso necessário)
+RUN apt-get update && apt-get install -y dos2unix && dos2unix ./mvnw
+
+RUN dos2UNIX ./mvnw
+
+# Resolve as dependências do projeto
+RUN ./mvnw dependency:resolve
+
+# Copia todo o código-fonte para a imagem
 COPY src ./src
 
-# Compila e empacota a aplicação, ignorando os testes
-RUN mvn clean package -DskipTests
-
-# Usa o OpenJDK 17 como imagem base para produção
-FROM eclipse-temurin:17-jre-slim
-
-# Cria um diretório para a aplicação
-RUN mkdir /app
-
-# Copia o arquivo .jar gerado da fase de build para o diretório de produção
-COPY --from=build /app/target/restaurant-1.0.0.jar /app/restaurant-1.0.0.jar
-
-# Expõe a porta 8080 para acesso à aplicação
-EXPOSE 8080
-
-# Define o comando para iniciar a aplicação
-ENTRYPOINT ["java", "-jar", "/app/restaurant-1.0.0.jar"]
+# Comando para executar a aplicação usando Maven
+CMD ["./mvnw", "spring-boot:run"]
