@@ -25,6 +25,15 @@ public class ImageUploadService {
     private Storage storage;
 
     public ImageUploadService() {
+        System.out.println("Credenciais: " + System.getenv("GOOGLE_APPLICATION_CREDENTIALS"));
+        String googleCredentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+
+        // Verificar se a variável está definida
+        if (googleCredentialsPath != null) {
+            System.out.println("GOOGLE_APPLICATION_CREDENTIALS: " + googleCredentialsPath);
+        } else {
+            System.out.println("A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS não está definida.");
+        }
         this.storage = StorageOptions.getDefaultInstance().getService();
     }
 
