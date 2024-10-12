@@ -1,8 +1,6 @@
 package com.menumaster.restaurant.image;
 
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
-import com.menumaster.restaurant.exception.type.GoogleCredentialsException;
 import com.menumaster.restaurant.exception.type.ImageException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockMultipartFile;
@@ -10,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.UUID;
@@ -27,15 +24,8 @@ public class ImageUploadService {
 
     private Storage storage;
 
-    public ImageUploadService(@Value("${gcp.config.file}") String gcpConfigFilePath) {
-        try {
-            this.storage = StorageOptions.newBuilder()
-                    .setCredentials(ServiceAccountCredentials.fromStream(new FileInputStream(gcpConfigFilePath)))
-                    .build()
-                    .getService();
-        } catch (IOException e) {
-            throw new GoogleCredentialsException("Falha ao carregar as credenciais do google a partir do arquivo json: " + gcpConfigFilePath);
-        }
+    public ImageUploadService() {
+        this.storage = StorageOptions.getDefaultInstance().getService();
     }
 
     public String uploadImage(MultipartFile file) throws IOException {

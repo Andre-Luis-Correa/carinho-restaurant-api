@@ -8,10 +8,10 @@ import com.menumaster.restaurant.dish.domain.dto.DishIngredientFormDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.domain.model.DishIngredient;
 import com.menumaster.restaurant.dish.service.DishService;
+import com.menumaster.restaurant.gemini.GeminiService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.transcription.TranscriptionService;
-import com.menumaster.restaurant.gemini.GeminiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Log4j2
 @RestController
@@ -100,27 +99,6 @@ public class DishController {
         return ResponseEntity.status(HttpStatus.OK).body(geminiService.sendRequest(prompt));
     }
 
-    @PostMapping("/transcribe")
-    public ResponseEntity<String> transcribeAudio(@RequestParam("file") MultipartFile audioFile) {
-        try {
-            // Realiza o upload do arquivo e retorna a URI do GCS
-            String gcsUri = transcriptionService.uploadFileToGCS(audioFile);
-
-            // Realiza a transcrição do áudio usando a URI do GCS
-            //String transcription = transcriptionService.transcribeAudio(gcsUri);
-
-            String transcription = transcriptionService.transcribeAudio(gcsUri);
-
-            // Retorna a transcrição obtida
-            return new ResponseEntity<>(transcription, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>("Erro ao processar a transcrição do áudio: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @PostMapping("/transcribe-gemini")
     public String transcribeAudioWithGemini(@RequestParam("file") MultipartFile audioFile) {
