@@ -191,4 +191,14 @@ public class DishService {
             }
         }
     }
+
+    public List<Dish> findByNameContainingIgnoreCase(String trimmedDish) {
+        return dishRepository.findByNameContainingIgnoreCase(trimmedDish);
+    }
+
+    public Dish findFirstByNameContainingIgnoreCase(String name) {
+        if(dishRepository.findFirstByNameContainingIgnoreCase(name).isPresent())
+            return dishRepository.findFirstByNameContainingIgnoreCase(name).get();
+        return null;
+    }
 }

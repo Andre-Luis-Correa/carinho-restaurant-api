@@ -6,6 +6,7 @@ import com.menumaster.restaurant.aiassistant.domain.dto.ChatMessageDTO;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatResponseDTO;
 import com.menumaster.restaurant.category.domain.dto.CategoryDTO;
 import com.menumaster.restaurant.dish.domain.dto.DishDTO;
+import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.ingredient.domain.dto.IngredientDTO;
 import com.menumaster.restaurant.measurementunit.domain.dto.MeasurementUnitDTO;
@@ -118,7 +119,7 @@ public class GeminiService {
             case "EDIT_DISH" -> processEditDishMessage(chatMessageDTO);
             case "DELETE_DISH" -> processDeleteDishMessage(chatMessageDTO);
             case "VIEW_SPECIFIC_DISH" -> processViewSpecificDishMessage(chatMessageDTO);
-            case "VIEW_MENU" -> processViewMenuMessage(chatMessageDTO);
+            case "VIEW_MENU" -> processViewMenuMessage();
             case "OTHER" -> processOtherMessage();
             default -> null;
         };
@@ -141,15 +142,75 @@ public class GeminiService {
         return null;
     }
 
-    private ChatResponseDTO processDeleteDishMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
+    private ChatResponseDTO processDeleteDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        String prompt1 = "A partir da seguinte frase: [" + chatMessageDTO.userMessage() + "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja remover. Cada nome deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
+
+        String dishName = sendRequest(prompt1);
+        String[] dishNameList = dishName.split(";");
+
+        if(dishNameList.length > 1) {
+            String sorryPrompt = "Escreva uma mensagem simples e curta de desculpa ao cliente, informando que não é possível remover do cardápio mais de um prato por vez.";
+            return new ChatResponseDTO(sendRequest(sorryPrompt),false);
+        }
+
+        String trimmedDish = dishNameList[0].trim();
+        Dish dishToBeRemoved = dishService.findFirstByNameContainingIgnoreCase(trimmedDish);
+        if(dishToBeRemoved != null) {
+            dishService.delete(dishToBeRemoved);
+            String successfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que o prato " + dishToBeRemoved.getName() +
+                    " foi removido do cardápio com sucesso.";
+            return new ChatResponseDTO(sendRequest(successfulRemovalPromt), true);
+        }
+
+        String unsuccessfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que não foi possível escluir o prato " + dishToBeRemoved.getName() +
+                ", pois não foi encontrado as informações referentes a esse prato no cardápio.";
+        return new ChatResponseDTO(sendRequest(unsuccessfulRemovalPromt), true);
     }
 
-    private ChatResponseDTO processViewSpecificDishMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
+    private ChatResponseDTO processViewSpecificDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        String prompt1 = "A partir da seguinte frase: [" + chatMessageDTO.userMessage() + "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja visualizar. Cada nome deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
+        String dishName = sendRequest(prompt1);
+        log.info(dishName);
+        String[] dishNameList = dishName.split(";");
+
+        List<Dish> foundDishes = new ArrayList<>();
+        List<String> notFoundDishes = new ArrayList<>();
+
+        for (String dish : dishNameList) {
+            log.info("Nome do prato: " + dish);
+            String trimmedDish = dish.trim();
+            log.info(trimmedDish);
+            List<Dish> dishes = dishService.findByNameContainingIgnoreCase(trimmedDish);
+
+            if (!dishes.isEmpty()) {
+                foundDishes.addAll(dishes);
+            } else {
+                notFoundDishes.add(dish);
+            }
+        }
+
+        StringBuilder prompt2 = new StringBuilder("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes, não é necessário cumprimentá-los. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio: \n");
+
+        if(foundDishes.isEmpty()) {
+            prompt2.append("No entanto, não foi possível encontrar nenhum prato solicitado pelo cliente, peça desculpas e diga que não foi possível encontrar as informações dos pratos solicitados.");
+        } else {
+            prompt2.append("Sendo assim, apresente ao cliente os seguintes pratos: \n");
+            for(Dish dish : foundDishes) {
+                prompt2.append("Prato: " + dish.getName() + ", Descrição: " + dish.getDescription() + ", Preço (R$): " + dish.getReaisPrice() + "\n");
+            }
+        }
+
+        if(!notFoundDishes.isEmpty()) {
+            prompt2.append("Além disso, peça desculpas e diga que não conseguiu encontrar informações a respeito dos seguintes pratos: ");
+            for(String dish : notFoundDishes) {
+                prompt2.append("Prato: " + dish + "\n");
+            }
+        }
+        log.info(prompt2);
+        return new ChatResponseDTO(sendRequest(prompt2.toString()), true);
     }
 
-    private ChatResponseDTO processViewMenuMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+    private ChatResponseDTO processViewMenuMessage() throws IOException, InterruptedException {
         List<DishDTO> dishDTOList = dishService.list();
 
         StringBuilder prompt = new StringBuilder("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. O cliente solicitou para visualizar os pratos disponíveis no cardápio.");
@@ -160,19 +221,12 @@ public class GeminiService {
         } else {
             prompt.append(" Com base nos seguintes pratos, apresente o cardápio ao cliente. Os pratos serão listados a seguir: ");
 
-            for(int i = 0; i < dishDTOList.size()-1; i++) {
-                if(dishDTOList.get(i).isAvailable()) {
-                    prompt.append("Prato: ").append(dishDTOList.get(i).name()).append(", Preço (R$): ")
-                            .append(dishDTOList.get(i).reaisPrice()).append("Descrição: ").append(dishDTOList.get(i).description())
-                            .append("; \n");
+            for(DishDTO dishDTO : dishDTOList) {
+                if(dishDTO.isAvailable()) {
+                    prompt.append("Prato: " + dishDTO.name() + ", Descrição: " + dishDTO.description() + ", Preço (R$): " + dishDTO.reaisPrice() + "\n");
                 }
             }
-
-            prompt.append("Prato: ").append(dishDTOList.get(dishDTOList.size()-1).name()).append(", Preço (R$): ")
-                    .append(dishDTOList.get(dishDTOList.size()-1).reaisPrice()).append("Descrição: ").append(dishDTOList.get(dishDTOList.size()-1).description())
-                    .append(".");
         }
-
 
         String response = sendRequest(prompt.toString());
         return new ChatResponseDTO(response, true);
