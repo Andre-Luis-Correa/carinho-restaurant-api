@@ -162,7 +162,7 @@ public class GeminiService {
             return new ChatResponseDTO(sendRequest(successfulRemovalPromt), true);
         }
 
-        String unsuccessfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que não foi possível escluir o prato " + dishToBeRemoved.getName() +
+        String unsuccessfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que não foi possível escluir o prato " + trimmedDish +
                 ", pois não foi encontrado as informações referentes a esse prato no cardápio.";
         return new ChatResponseDTO(sendRequest(unsuccessfulRemovalPromt), true);
     }
