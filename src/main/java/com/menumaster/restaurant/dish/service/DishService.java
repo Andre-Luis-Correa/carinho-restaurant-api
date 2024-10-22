@@ -18,6 +18,7 @@ import com.menumaster.restaurant.exception.type.EntityNotFoundException;
 import com.menumaster.restaurant.exception.type.UploadImageException;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.image.ImageUploadService;
+import com.menumaster.restaurant.measurementunit.domain.model.MeasurementUnit;
 import com.menumaster.restaurant.utils.UploadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -90,10 +91,11 @@ public class DishService {
         return dishFormDTOToDishMapper.convert(dishFormDTO);
     }
 
-    public DishIngredient convertToDishIngredient(Dish dish, Ingredient ingredient, DishIngredientFormDTO dishIngredientFormDTO) {
+    public DishIngredient convertToDishIngredient(Dish dish, Ingredient ingredient, MeasurementUnit measurementUnit, DishIngredientFormDTO dishIngredientFormDTO) {
         DishIngredient dishIngredient = dishIngredientFormDTOToDishIngredientMapper.convert(dishIngredientFormDTO);
         dishIngredient.setDish(dish);
         dishIngredient.setIngredient(ingredient);
+        dishIngredient.setMeasurementUnit(measurementUnit);
         return dishIngredient;
     }
 
@@ -143,6 +145,7 @@ public class DishService {
             newIngredient.setDish(dish);
             newIngredient.setIngredient(newIngredient.getIngredient());
             newIngredient.setQuantity(newIngredient.getQuantity());
+            newIngredient.setMeasurementUnit(newIngredient.getMeasurementUnit());
             existingDishIngredients.add(dishIngredientRepository.save(newIngredient));
         }
     }

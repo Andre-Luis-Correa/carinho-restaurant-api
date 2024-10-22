@@ -11,6 +11,8 @@ import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.gemini.GeminiService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
+import com.menumaster.restaurant.measurementunit.domain.model.MeasurementUnit;
+import com.menumaster.restaurant.measurementunit.service.MeasurementUnitService;
 import com.menumaster.restaurant.transcription.TranscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class DishController {
     private final DishService dishService;
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
+    private final MeasurementUnitService measurementUnitService;
     private final GeminiService geminiService;
     private final TranscriptionService transcriptionService;
 
@@ -47,7 +50,8 @@ public class DishController {
         List<DishIngredient> dishIngredientList = new ArrayList<>();
         for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
             Ingredient ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
-            DishIngredient dishIngredient = dishService.convertToDishIngredient(null, ingredient, dishIngredientFormDTO);
+            MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(dishIngredientFormDTO.measurementUnitId());
+            DishIngredient dishIngredient = dishService.convertToDishIngredient(null, ingredient, measurementUnit, dishIngredientFormDTO);
             dishIngredientList.add(dishIngredient);
         }
 
@@ -64,7 +68,8 @@ public class DishController {
         List<DishIngredient> dishIngredientList = new ArrayList<>();
         for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
             Ingredient ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
-            DishIngredient dishIngredient = dishService.convertToDishIngredient(dish, ingredient, dishIngredientFormDTO);
+            MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(dishIngredientFormDTO.measurementUnitId());
+            DishIngredient dishIngredient = dishService.convertToDishIngredient(dish, ingredient, measurementUnit, dishIngredientFormDTO);
             dishIngredientList.add(dishIngredient);
         }
 

@@ -8,5 +8,8 @@ public record DishIngredientFormDTO(
         Long ingredientId,
 
         @NotNull
-        Double quantity
+        Double quantity,
+
+        @NotNull
+        Long measurementUnitId
 ) { }
