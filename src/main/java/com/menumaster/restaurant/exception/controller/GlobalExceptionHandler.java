@@ -26,8 +26,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(ChatAiAssistantException.class)
+    public ResponseEntity<ErrorDescription> handleChatAiAssistantException(ChatAiAssistantException ex) {
+        ErrorDescription errorResponse = new ErrorDescription(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(ExtractingJsonDataException.class)
-    public ResponseEntity<ErrorDescription> handleEntityNotFoundException(ExtractingJsonDataException ex) {
+    public ResponseEntity<ErrorDescription> handleExtractingJsonDataException(ExtractingJsonDataException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage()
@@ -36,7 +45,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AudioTranscriptionException.class)
-    public ResponseEntity<ErrorDescription> handleEntityNotFoundException(AudioTranscriptionException ex) {
+    public ResponseEntity<ErrorDescription> handleAudioTranscriptionException(AudioTranscriptionException ex) {
         ErrorDescription errorResponse = new ErrorDescription(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage()

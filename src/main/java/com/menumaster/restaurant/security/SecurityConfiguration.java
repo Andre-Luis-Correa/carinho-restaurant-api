@@ -60,7 +60,10 @@ public class SecurityConfiguration {
             "/dish/transcribe-gemini",
 
             // Teste
-            "/home"
+            "/home",
+
+            // Ai Assistant
+            "/ai-assistant/chat"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
