@@ -114,7 +114,7 @@ public class GeminiService {
 
         return switch (intent) {
             case "GREETING" -> processGreetingMessage(chatMessageDTO);
-            case "PRESENTATION" -> processPresentationMessage(chatMessageDTO);
+            case "PRESENTATION" -> processPresentationMessage();
             case "CREATE_DISH" -> processCreateDishMessage(chatMessageDTO);
             case "EDIT_DISH" -> processEditDishMessage(chatMessageDTO);
             case "DELETE_DISH" -> processDeleteDishMessage(chatMessageDTO);
@@ -126,12 +126,20 @@ public class GeminiService {
 
     }
 
-    private ChatResponseDTO processGreetingMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
+    private ChatResponseDTO processGreetingMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        String prompt = "Aja como um atendente virtual do Restaurante Carinho, seja simpático e educado. O cliente enviou uma saudação: [" + chatMessageDTO.userMessage() + "]. Responda de maneira amigável e acolhedora.";
+
+        String response = sendRequest(prompt);
+
+        return new ChatResponseDTO(response, true);
     }
 
-    private ChatResponseDTO processPresentationMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
+    private ChatResponseDTO processPresentationMessage() throws IOException, InterruptedException {
+        String prompt = "Aja como um atendente virtual do Restaurante Carinho. O cliente quer saber mais sobre o restaurante. Explique que o restaurante tem pratos deliciosos no cardápio e que você pode ajudar o cliente a navegar pelos sabores do restaurante!";
+
+        String response = sendRequest(prompt);
+
+        return new ChatResponseDTO(response, true);
     }
 
     private ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) {
@@ -233,7 +241,7 @@ public class GeminiService {
     }
 
     private ChatResponseDTO processOtherMessage() throws IOException, InterruptedException {
-        String response = sendRequest("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. Retorne uma mensagem pedidno desculpas e dizendo que não conseguiu processar a mensagem do usuário.");
+        String response = sendRequest("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. Retorne uma mensagem pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário.");
         return new ChatResponseDTO(response, false);
     }
 
