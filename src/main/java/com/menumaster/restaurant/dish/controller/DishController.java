@@ -8,6 +8,7 @@ import com.menumaster.restaurant.dish.domain.dto.DishIngredientFormDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.domain.model.DishIngredient;
 import com.menumaster.restaurant.dish.service.DishService;
+import com.menumaster.restaurant.exception.type.AudioTranscriptionException;
 import com.menumaster.restaurant.gemini.GeminiService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
@@ -106,22 +107,10 @@ public class DishController {
 
 
     @PostMapping("/transcribe-gemini")
-    public String transcribeAudioWithGemini(@RequestParam("file") MultipartFile audioFile) {
-        // Primeiro, fazemos o upload do áudio e obtemos o URI
+    public ResponseEntity<String> transcribeAudioWithGemini(@RequestParam("file") MultipartFile audioFile) throws IOException, InterruptedException {
         String fileUri = transcriptionService.uploadAudio(audioFile);
 
-        if (fileUri.startsWith("Erro")) {
-            // Se ocorrer um erro durante o upload, retorne o erro
-            return fileUri;
-        }
-
-        try {
-            // Envia o URI para a transcrição do áudio e retorna a resposta
-            String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
-            return transcriptionResponse;
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return "Erro ao transcrever o áudio: " + e.getMessage();
-        }
+        String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
+        return ResponseEntity.ok().body(transcriptionResponse);
     }
 }

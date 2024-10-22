@@ -26,6 +26,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(ExtractingJsonDataException.class)
+    public ResponseEntity<ErrorDescription> handleEntityNotFoundException(ExtractingJsonDataException ex) {
+        ErrorDescription errorResponse = new ErrorDescription(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(AudioTranscriptionException.class)
+    public ResponseEntity<ErrorDescription> handleEntityNotFoundException(AudioTranscriptionException ex) {
+        ErrorDescription errorResponse = new ErrorDescription(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(GoogleCredentialsException.class)
     public ResponseEntity<ErrorDescription> handleGoogleCredentialsException(GoogleCredentialsException ex) {
         ErrorDescription errorResponse = new ErrorDescription(

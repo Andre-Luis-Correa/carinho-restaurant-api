@@ -2,6 +2,8 @@ package com.menumaster.restaurant.transcription;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.menumaster.restaurant.exception.type.AudioTranscriptionException;
+import com.menumaster.restaurant.exception.type.ExtractingJsonDataException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -81,8 +83,7 @@ public class TranscriptionService {
 
             return textNode.asText();
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Erro ao processar o JSON.";
+            throw new ExtractingJsonDataException("text");
         }
     }
 
@@ -120,8 +121,7 @@ public class TranscriptionService {
             return extractFileUriFromJson(response.toString());
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Erro ao enviar o arquivo: " + e.getMessage();
+            throw  new AudioTranscriptionException();
         }
     }
 
@@ -138,8 +138,7 @@ public class TranscriptionService {
 
             return uriNode.asText();
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Erro ao processar o JSON.";
+            throw new ExtractingJsonDataException("uri");
         }
     }
 }
