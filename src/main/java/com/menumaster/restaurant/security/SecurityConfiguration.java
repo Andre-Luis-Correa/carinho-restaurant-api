@@ -39,6 +39,7 @@ public class SecurityConfiguration {
             // category
             "/category/list",
             "/category/page",
+            "/category/get/{id}",
 
             // measurementUnit
             "/measurement-unit/list",

@@ -49,4 +49,10 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.OK).body(categoryService.listByPageable(pageable));
     }
 
+    @GetMapping("/get/{id}")
+    public ResponseEntity<CategoryDTO> getCategoryDTOById(@PathVariable Long id) {
+        Category category = categoryService.getOrThrowException(id);
+        return ResponseEntity.ok().body(categoryService.convertCategoryToCategoryDTO(category));
+    }
+
 }
