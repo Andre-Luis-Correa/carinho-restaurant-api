@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatMessageDTO;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatResponseDTO;
 import com.menumaster.restaurant.category.domain.dto.CategoryDTO;
-import com.menumaster.restaurant.category.domain.model.Category;
 import com.menumaster.restaurant.category.service.CategoryService;
 import com.menumaster.restaurant.dish.domain.dto.DishDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
@@ -160,14 +159,36 @@ public class GeminiService {
             return new ChatResponseDTO("Desculpe, mas você não possui a autorização necessária para acessar a funcionalidade de criação de pratos em nosso cardápio. Que tal dar uma olhadinha no cardápio?", false);
         }
 
-        String messagePrompt = """
-            Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes.
-            O cliente solicitou a criação de um prato a partir da seguinte mensagem:
-        """ + chatMessageDTO.userMessage();
+        List<String> validationErrors = new ArrayList<>();
+
+        String dishName = getDishNameFromUserMessage(chatMessageDTO.userMessage());
+        if(dishName != null && dishName.contains("ERROR")) {
+            validationErrors.add("O nome do prato não foi informado corretamente");
+        }
+
+        String dishDescription = getDishDescriptionFromUserMessage(chatMessageDTO.userMessage());
+        if(dishDescription != null && dishDescription.contains("ERROR")) {
+            validationErrors.add("A descrição do prato não foi informada corretamente");
+        }
+
+        String dishReaisPrice = getDishReaisPriceFromUserMessage(chatMessageDTO.userMessage());
+        if(dishReaisPrice != null && dishReaisPrice.contains("ERRO")) {
+            validationErrors.add("O preço em reais (R$) do prato não foi informado corretamente.");
+        }
+
+        String dishReaisCostPrice = getDishReaisCostPriceFromUserMessage(chatMessageDTO.userMessage());
+        if(dishReaisCostPrice != null && dishReaisCostPrice.contains("ERRO")) {
+            validationErrors.add("O preço de custo em reais (R$) do prato não foi informado corretamente.");
+        }
+
+        String dishIsAvailable = "true";
+
+        String dishCategoryId = getDishCategoryFromUserMessage(chatMessageDTO.userMessage());
+        if(dishCategoryId != null && dishCategoryId.contains("ERRO")) {
+            validationErrors.add("O categoria do prato não foi informada corretamente.");
+        }
 
         String jsonAndRulesPrompt = """
-            Sua resposta deve ser um JSON no formato abaixo, contendo as informações do prato extraídas da mensagem do usuário:
-            
             {
               "name": "nome do prato informado pelo usuário",
               "description": "Descrição do prato informada pelo usuário",
@@ -175,29 +196,15 @@ public class GeminiService {
               "pointsPrice": Este valor você pode calcular automaticamente, sabendo que 1 ponto corresponde a R$ 0,10,
               "reaisCostValue": Este é o valor de custo real informado pelo usuário,
               "isAvailable": insira sempre o valor true,
-              "categoryId": insira o id da categoria do prato informado pelo usuário baseado no id das categorias pré cadastradas,
+              "categoryId": insira o id da categoria do prato informado pelo usuário, desde que exista entre as categorias pré cadastradas,
               "dishIngredientFormDTOList": [
                 {
-                  "ingredientId": informe o id do ingrediente informado pelo usuário baseado no id dos ingredientes pré cadastrados,
+                  "ingredientId": informe o id do ingrediente informado pelo usuário, desde que ela exista entre os ingredientes pré cadastrados,
                   "quantity": informe a quantidade do ingrediente informado pelo usuário,
-                  "measurementUnitId": informe o id da unidade de medida do ingrediente para esse prato, baseado no id das unidades de medidas pré cadastradas
+                  "measurementUnitId": informe o id da unidade de medida informada pelo usuário para o ingrediente, desde que exita entra as unidades de medidas pré cadastradas
                 }
               ]
             }
-            
-            Algumas regras importantes:
-            
-            1. Todos os campos devem ser preenchidos. Se algum campo não for informado, retorne uma mensagem explicando quais dados estão faltando e que o prato não pode ser criado, não retorne nenhuma estrutura de json nesse caso.
-            
-            2. Verifique se a categoria, os ingredientes e as unidades de medida informados pelo usuário são válidos comparando-os com os dados pré-cadastrados. Se algum dado estiver incorreto ou não estiver pré-cadastrado, informe exatamente qual dado é inválido e peça desculpas, não retorne nenhuma estrutura de json nesse caso.
-            
-            3. Cada ingrediente informado deve ter uma quantidade e uma unidade de medida associada. Caso contrário, informe que é necessário fornecer a quantidade e a unidade de medida para cada ingrediente, não retorne nenhuma estrutura de json nesse caso.
-            
-            4. Se houver mais de uma categoria, informe que apenas uma categoria pode ser atribuída ao prato, não retorne nenhuma estrutura de json nesse caso.
-            
-            5. Se todos os dados forem válidos e informados pelo usuário, retorne apenas o JSON, sem mensagens adicionais.
-            
-            6. Se algum erro ocorrer ou alguma regra não for respeitada, retorne apenas uma mensagem explicando os motivos e não retorne nenhuma estrutura de json nesse caso.
         """;
 
         // Carregar dados existentes de categorias, unidades de medida e ingredientes
@@ -215,17 +222,129 @@ public class GeminiService {
             registeredDataPrompt.append("Unidade de Medida -> Id: " + measurementUnitDTO.id() + " Nome: " + measurementUnitDTO.name() + " Sigla: " + measurementUnitDTO.acronym() + "\n");
         }
         for (IngredientDTO ingredientDTO : ingredientDTOList) {
-            registeredDataPrompt.append("Ingrediente -> Id: " + ingredientDTO.id() + ingredientDTO.name() + "\n");
+            registeredDataPrompt.append("Ingrediente -> Id: " + ingredientDTO.id() + " Nome: " + ingredientDTO.name() + "\n");
         }
 
-        // Construir o prompt completo com as regras, dados existentes e mensagem do usuário
-        String prompt = messagePrompt + jsonAndRulesPrompt + registeredDataPrompt;
-        log.info(prompt);
-
         // Enviar o prompt ao Gemini e retornar a resposta
-        return new ChatResponseDTO(sendRequest(prompt), true);
+        //return new ChatResponseDTO(sendRequest(prompt), true);
+        return new ChatResponseDTO(dishName + "\n" + dishDescription + "\n" + dishReaisPrice + "\n" + dishReaisCostPrice
+                + dishCategoryId, false);
     }
 
+    private String getDishNameFromUserMessage(String userMessage) throws IOException, InterruptedException {
+        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
+                """
+                A partir dessa mensagem identifique o nome do prato e se identificado retorne apenas o nome do prato.
+                Caso não seja possível identificar o nome do prato retorne apenas a palavra [ERRO].
+                
+                Exemplos:
+                
+                [Quero criar um prato com nome farofa] = retorne apenas [farofa]
+                [Quero criar o prato canjica] = retorne apenas [canjica].
+                [Quero criar um prato] = retorne apenas [ERRO], pois não foi informado o nome.
+                """;
+
+        String dishName = sendRequest(prompt);
+        log.info("Nome do prato: " + dishName);
+
+        return dishName;
+    }
+
+    private String getDishDescriptionFromUserMessage(String userMessage) throws IOException, InterruptedException {
+        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
+                """
+                A partir dessa mensagem identifique a descrição do prato e se identificado retorne apenas a descrição do prato.
+                Caso não seja possível identificar a descrição do prato retorne apenas a palavra [ERRO].
+                
+                Exemplos:
+                
+                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento] = retorne apenas [delicioso e suculento].
+                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho] = retorne apenas [irresístivel sabor do restaurante carinho].
+                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira] = retorne apenas [delicioso sabor de sobremesa brasileira].
+                [Quero criar um prato chamado costelão] = retorne apenas a palavra [ERRO], pois não foi informado uma descrição para o prato.
+                """;
+
+        String dishDescription = sendRequest(prompt);
+        log.info("Descrição do prato: " + dishDescription);
+
+        return dishDescription;
+    }
+
+    private String getDishReaisPriceFromUserMessage(String userMessage) throws IOException, InterruptedException {
+        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
+                """
+                A partir dessa mensagem identifique o preço em reais (R$) do prato e se identificado retorne apenas o preço em reais (R$) do prato.
+                Caso não seja possível identificar o preço em reais (R$) do prato retorne apenas a palavra [ERRO].
+                
+                Exemplos:
+                
+                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90] = retorne apenas [29.90].
+                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais] = retorne apenas [29.90].
+                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais] = retorne apenas [29].
+                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento] = retorne apenas a palavra [ERRO], pois não foi informado o preço em reais (R$) para o prato.
+                Observação: caso a pessoa tenha digitado um valor númerico incorreto para o preço, por exemplo, 30.9.9; 39,9,9; 35.0000,4, ou outros, retorne apenas [ERRO].
+                Além disso, os únicos valores númericos aceitos para o preço seguem o padrão [0-9]*.[0-9][0-9] ou [0-9]*,[0-9][0-9], sempre arredonde para 2 casas decimais.
+                """;
+
+        String dishReaisPrice = sendRequest(prompt);
+        log.info("Preço em R$ do prato: " + dishReaisPrice);
+
+        return dishReaisPrice;
+    }
+
+    private String getDishReaisCostPriceFromUserMessage(String userMessage) throws IOException, InterruptedException {
+        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
+                """
+                A partir dessa mensagem identifique o preço de custo em reais (R$) do prato e se identificado retorne apenas o preço de custo em reais (R$) do prato.
+                Caso não seja possível identificar o preço de custo em reais (R$) do prato retorne apenas a palavra [ERRO].
+                
+                Exemplos:
+                
+                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90, com preço de custo de 20 reais.] = retorne apenas [20].
+                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais, que tem um preço real de R$ 22.00] = retorne apenas [22.00].
+                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais e preço de custo de R$ 15] = retorne apenas [15].
+                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento, com valor de 40 reais] = retorne apenas a palavra [ERRO], pois não foi informado o preço de custo em reais (R$) para o prato.
+                Observação: caso a pessoa tenha digitado um valor númerico incorreto para o preço de custo, por exemplo, 30.9.9; 39,9,9; 35.0000,4, ou outros, retorne apenas [ERRO].
+                Além disso, os únicos valores númericos aceitos para o preço de custo seguem o padrão [0-9]*.[0-9][0-9] ou [0-9]*,[0-9][0-9], sempre arredonde para 2 casas decimais.
+                """;
+
+        String dishReaisCostPrice = sendRequest(prompt);
+        log.info("Preço de custo em R$ do prato: " + dishReaisCostPrice);
+
+        return dishReaisCostPrice;
+    }
+
+    private String getDishCategoryFromUserMessage(String userMessage) throws IOException, InterruptedException {
+        List<CategoryDTO> categoryDTOList = categoryService.list();
+
+        StringBuilder validCategoryPrompt = new StringBuilder("As categorias válidas são: \n");
+        for (CategoryDTO categoryDTO : categoryDTOList) {
+            validCategoryPrompt.append("Categoria -> Id:  " + categoryDTO.id() + " Nome: " + categoryDTO.name() + "\n");
+        }
+
+        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
+                """
+                A partir dessa mensagem identifique categoria do prato e se identificado retorne apenas o id da categoria válido do prato.
+                Caso não seja possível identificar a categoria do prato retorne apenas a palavra [ERRO].
+                """
+                + validCategoryPrompt +
+                """
+                Exemplos:
+                
+                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90, com preço de custo de 20 reais, na categoria brasil.] = retorne apenas um numero que representa o id da categoria válida.
+                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais, que tem um preço real de R$ 22.00, na categoria carnes] = retorne apenas um numero que representa o id da categoria válida.
+                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais e preço de custo de R$ 15, insira-o na categoria sobremesas] = retorne apenas um numero que representa o id da categoria válida.
+                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento, com valor de 40 reais e preço de custo de 20 reais.] = retorne apenas a palavra [ERRO], pois não foi informado a categoria para o prato.
+                Observação: caso a categoria informada não esteja entre as categorias válidas, retorne [ERRO].
+                Além disso, caso o usuário informe mais de uma categoria, retorne apenas [ERRO].
+                """;
+
+        String dishCategory = sendRequest(prompt);
+        log.info(prompt);
+        log.info("Categoria do prato: " + dishCategory);
+
+        return dishCategory;
+    }
 
     private ChatResponseDTO processEditDishMessage(ChatMessageDTO chatMessageDTO) {
         return null;

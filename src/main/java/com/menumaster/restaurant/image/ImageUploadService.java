@@ -35,6 +35,8 @@ public class ImageUploadService {
             System.out.println("A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS não está definida.");
         }
         this.storage = StorageOptions.getDefaultInstance().getService();
+
+
     }
 
     public String uploadImage(MultipartFile file) throws IOException {
