@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatMessageDTO;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatResponseDTO;
 import com.menumaster.restaurant.category.domain.dto.CategoryDTO;
+import com.menumaster.restaurant.category.domain.model.Category;
+import com.menumaster.restaurant.category.service.CategoryService;
 import com.menumaster.restaurant.dish.domain.dto.DishDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.service.DishService;
 import com.menumaster.restaurant.ingredient.domain.dto.IngredientDTO;
+import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.measurementunit.domain.dto.MeasurementUnitDTO;
+import com.menumaster.restaurant.measurementunit.service.MeasurementUnitService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +36,15 @@ public class GeminiService {
 
     @Autowired
     private DishService dishService;
+
+    @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
+    private MeasurementUnitService measurementUnitService;
+
+    @Autowired
+    private IngredientService ingredientService;
 
     public GeminiService(@Value("${gemini.api.key}") String apiKey,
                          @Value("${gemini.question.api.url}") String geminiQuestionUrl) {
@@ -142,16 +155,88 @@ public class GeminiService {
         return new ChatResponseDTO(response, true);
     }
 
-    private ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
+    private ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        if (!chatMessageDTO.userRole().equals("ROLE_ADMINISTRATOR")) {
+            return new ChatResponseDTO("Desculpe, mas você não possui a autorização necessária para acessar a funcionalidade de criação de pratos em nosso cardápio. Que tal dar uma olhadinha no cardápio?", false);
+        }
+
+        String messagePrompt = """
+            Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes.
+            O cliente solicitou a criação de um prato a partir da seguinte mensagem:
+        """ + chatMessageDTO.userMessage();
+
+        String jsonAndRulesPrompt = """
+            Sua resposta deve ser um JSON no formato abaixo, contendo as informações do prato extraídas da mensagem do usuário:
+            
+            {
+              "name": "nome do prato informado pelo usuário",
+              "description": "Descrição do prato informada pelo usuário",
+              "reaisPrice": valor em reais (R$) do prato informado pelo usuário,
+              "pointsPrice": Este valor você pode calcular automaticamente, sabendo que 1 ponto corresponde a R$ 0,10,
+              "reaisCostValue": Este é o valor de custo real informado pelo usuário,
+              "isAvailable": insira sempre o valor true,
+              "categoryId": insira o id da categoria do prato informado pelo usuário baseado no id das categorias pré cadastradas,
+              "dishIngredientFormDTOList": [
+                {
+                  "ingredientId": informe o id do ingrediente informado pelo usuário baseado no id dos ingredientes pré cadastrados,
+                  "quantity": informe a quantidade do ingrediente informado pelo usuário,
+                  "measurementUnitId": informe o id da unidade de medida do ingrediente para esse prato, baseado no id das unidades de medidas pré cadastradas
+                }
+              ]
+            }
+            
+            Algumas regras importantes:
+            
+            1. Todos os campos devem ser preenchidos. Se algum campo não for informado, retorne uma mensagem explicando quais dados estão faltando e que o prato não pode ser criado, não retorne nenhuma estrutura de json nesse caso.
+            
+            2. Verifique se a categoria, os ingredientes e as unidades de medida informados pelo usuário são válidos comparando-os com os dados pré-cadastrados. Se algum dado estiver incorreto ou não estiver pré-cadastrado, informe exatamente qual dado é inválido e peça desculpas, não retorne nenhuma estrutura de json nesse caso.
+            
+            3. Cada ingrediente informado deve ter uma quantidade e uma unidade de medida associada. Caso contrário, informe que é necessário fornecer a quantidade e a unidade de medida para cada ingrediente, não retorne nenhuma estrutura de json nesse caso.
+            
+            4. Se houver mais de uma categoria, informe que apenas uma categoria pode ser atribuída ao prato, não retorne nenhuma estrutura de json nesse caso.
+            
+            5. Se todos os dados forem válidos e informados pelo usuário, retorne apenas o JSON, sem mensagens adicionais.
+            
+            6. Se algum erro ocorrer ou alguma regra não for respeitada, retorne apenas uma mensagem explicando os motivos e não retorne nenhuma estrutura de json nesse caso.
+        """;
+
+        // Carregar dados existentes de categorias, unidades de medida e ingredientes
+        List<CategoryDTO> categoryDTOList = categoryService.list();
+        List<MeasurementUnitDTO> measurementUnitDTOList = measurementUnitService.list();
+        List<IngredientDTO> ingredientDTOList = ingredientService.list();
+
+        // Gerar a lista de dados cadastrados
+        StringBuilder registeredDataPrompt = new StringBuilder("Apenas os dados pré-cadastrados para categoria, unidade de medida e ingrediente podem ser informados pelo usuário. Os dados ppré-cadastrados são os seguintes: \n");
+
+        for (CategoryDTO categoryDTO : categoryDTOList) {
+            registeredDataPrompt.append("Categoria -> Id:  " + categoryDTO.id() + " Nome: " + categoryDTO.name() + "\n");
+        }
+        for (MeasurementUnitDTO measurementUnitDTO : measurementUnitDTOList) {
+            registeredDataPrompt.append("Unidade de Medida -> Id: " + measurementUnitDTO.id() + " Nome: " + measurementUnitDTO.name() + " Sigla: " + measurementUnitDTO.acronym() + "\n");
+        }
+        for (IngredientDTO ingredientDTO : ingredientDTOList) {
+            registeredDataPrompt.append("Ingrediente -> Id: " + ingredientDTO.id() + ingredientDTO.name() + "\n");
+        }
+
+        // Construir o prompt completo com as regras, dados existentes e mensagem do usuário
+        String prompt = messagePrompt + jsonAndRulesPrompt + registeredDataPrompt;
+        log.info(prompt);
+
+        // Enviar o prompt ao Gemini e retornar a resposta
+        return new ChatResponseDTO(sendRequest(prompt), true);
     }
+
 
     private ChatResponseDTO processEditDishMessage(ChatMessageDTO chatMessageDTO) {
         return null;
     }
 
     private ChatResponseDTO processDeleteDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-        String prompt1 = "A partir da seguinte frase: [" + chatMessageDTO.userMessage() + "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja remover. Cada nome deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
+        String prompt1 = "A partir da seguinte frase: [" +
+                chatMessageDTO.userMessage() +
+                "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja remover. " +
+                "Cada nome deve ser separado por um ponto e vírgula [;], " +
+                "caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
 
         String dishName = sendRequest(prompt1);
         String[] dishNameList = dishName.split(";");
@@ -176,7 +261,11 @@ public class GeminiService {
     }
 
     private ChatResponseDTO processViewSpecificDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-        String prompt1 = "A partir da seguinte frase: [" + chatMessageDTO.userMessage() + "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja visualizar. Cada nome deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
+        String prompt1 = "A partir da seguinte frase: [" + chatMessageDTO.userMessage() +
+                "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja visualizar. " +
+                "Cada nome deve ser separado por um ponto e vírgula [;], " +
+                "caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;]";
+
         String dishName = sendRequest(prompt1);
         log.info(dishName);
         String[] dishNameList = dishName.split(";");
@@ -241,7 +330,13 @@ public class GeminiService {
     }
 
     private ChatResponseDTO processOtherMessage() throws IOException, InterruptedException {
-        String response = sendRequest("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. Retorne uma mensagem pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário.");
+        String prompt = """
+                "Aja como um atendente virtual do Restaurante Carinho, sendo simpático, 
+                educado e convidativo enquanto auxilia os clientes. Retorne uma mensagem 
+                pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário."
+                """;
+
+        String response = sendRequest(prompt);
         return new ChatResponseDTO(response, false);
     }
 

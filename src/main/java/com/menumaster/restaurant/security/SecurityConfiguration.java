@@ -55,16 +55,12 @@ public class SecurityConfiguration {
             "/dish/page",
             "/dish/get/{id}",
 
-            // gemini
-            "/dish/chat",
-            "/dish/transcribe",
-            "/dish/transcribe-gemini",
-
             // Teste
             "/home",
 
             // Ai Assistant
-            "/ai-assistant/chat"
+            "/ai-assistant/chat",
+            "/ai-assistant/transcribe-audio"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {
