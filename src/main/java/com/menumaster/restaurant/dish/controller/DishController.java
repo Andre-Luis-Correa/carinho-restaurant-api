@@ -39,8 +39,6 @@ public class DishController {
     private final CategoryService categoryService;
     private final IngredientService ingredientService;
     private final MeasurementUnitService measurementUnitService;
-    private final GeminiService geminiService;
-    private final TranscriptionService transcriptionService;
 
     @PostMapping("/create")
     public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) throws IOException {

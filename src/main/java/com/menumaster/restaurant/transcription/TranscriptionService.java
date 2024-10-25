@@ -121,7 +121,7 @@ public class TranscriptionService {
             return extractFileUriFromJson(response.toString());
 
         } catch (Exception e) {
-            throw  new AudioTranscriptionException();
+            throw new AudioTranscriptionException();
         }
     }
 

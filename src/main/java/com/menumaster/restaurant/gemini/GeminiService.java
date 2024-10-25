@@ -9,6 +9,7 @@ import com.menumaster.restaurant.category.service.CategoryService;
 import com.menumaster.restaurant.dish.domain.dto.DishDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.service.DishService;
+import com.menumaster.restaurant.exception.type.ExtractingJsonDataException;
 import com.menumaster.restaurant.ingredient.domain.dto.IngredientDTO;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.measurementunit.domain.dto.MeasurementUnitDTO;
@@ -44,6 +45,8 @@ public class GeminiService {
 
     @Autowired
     private IngredientService ingredientService;
+
+    private String initialCommand = "Aja como um atendente virtual do Restaurante Carinho, seja simpático e educado. Apenas responda perguntas referentes ao restaurante Carinho. ";
 
     public GeminiService(@Value("${gemini.api.key}") String apiKey,
                          @Value("${gemini.question.api.url}") String geminiQuestionUrl) {
@@ -92,29 +95,24 @@ public class GeminiService {
 
             return textNode.asText();
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Erro ao processar o JSON.";
+            throw new ExtractingJsonDataException("text");
         }
     }
 
     public String recognizeIntent(String userMessage) throws IOException, InterruptedException {
         List<String> intents = new ArrayList<>();
-        intents.add("GREETING - Se o usuário enviar uma saudação, retorne essa intenção");
-        intents.add("PRESENTATION - Se o usuário solicitar sobre o funcionamento do chat, retorne essa intenção");
-        intents.add("CREATE_DISH - Se o usuário quiser criar um novo pratoo, retorne essa intenção");
-        intents.add("EDIT_DISH - Se o usuário deseja editar as informações de um prato, retorne essa intenção");
-        intents.add("DELETE_DISH - Se o usuário deseja remover um prato, retorne essa intenção");
-        intents.add("VIEW_SPECIFIC_DISH - Se o usuário deseja visualizar as ifnormações de um prato específico, retorne essa intenção");
-        intents.add("VIEW_MENU - Se o usuário estiver interessado em visualizar o cardápio completo, retorne essa intenção");
-        intents.add("OTHER - Se não foi possível classificar a intenção do usuário em uma das categorias anteriores, retorne esta intenção");
+        intents.add("Se o usuário enviar uma saudação, retorne apenas uma mensagem de saudação ao cliente");
+        intents.add("Se o usuário solicitar sobre o funcionamento do chat, retorne apenas uma mensagem explicando que você pode ajudá-lo a explorar os pratos do cardápio.");
+        intents.add("Se o usuário quiser criar um novo pratoo, retorne apenas a palavra entre colchetes [CREATE_DISH].");
+        intents.add("Se o usuário deseja remover um prato, retorne apenas a palavra entre colchetes [DELETE_DISH].");
+        intents.add("Se o usuário deseja visualizar as informações de um prato específico, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH].");
+        intents.add("Se o usuário estiver interessado em visualizar o cardápio completo, retorne apenas a palavra entre colchetes [VIEW_MENU].");
+        intents.add("Se não foi possível classificar a intenção do usuário em uma das categorias anteriores, retorne apenas uma mensagem pedindo desculpas explicando que não conseguiu interpretar a mensagem do cliente.");
 
-        StringBuilder prompt = new StringBuilder("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. Sua tarefa é identificar a intenção da mensagem enviada pelo usuário. A partir desta frase: [" + userMessage + "], classifique a intenção dela em uma das seguintes intenções: ");
-
+        StringBuilder prompt = new StringBuilder(initialCommand + "Sua tarefa é retornar uma mensagem. A partir desta frase: [" + userMessage + "], retorne uma mensagem com base nas seguintes regras: ");
         for(int i = 0; i < intents.size()-1; i++) {
-            prompt.append(intents.get(i)).append(", ");
+            prompt.append(intents.get(i)).append("\n");
         }
-
-        prompt.append(intents.get(intents.size()-1)).append(". Retorne apenas a intenção sem nenhum outro texto.");
 
         log.info(prompt);
         return sendRequest(prompt.toString());
@@ -122,36 +120,23 @@ public class GeminiService {
 
 
     public ChatResponseDTO processMessageBasedOnIntent(ChatMessageDTO chatMessageDTO, String intent) throws IOException, InterruptedException {
-        intent = intent.replace(" \n", "");
+        if(intent.contains("CREATE_DISH")) intent = "CREATE_DISH";
+        if(intent.contains("DELETE_DISH")) intent = "DELETE_DISH";
+        if(intent.contains("VIEW_SPECIFIC_DISH")) intent = "VIEW_SPECIFIC_DISH";
+        if(intent.contains("VIEW_MENU")) intent = "VIEW_MENU";
 
         return switch (intent) {
-            case "GREETING" -> processGreetingMessage(chatMessageDTO);
-            case "PRESENTATION" -> processPresentationMessage();
             case "CREATE_DISH" -> processCreateDishMessage(chatMessageDTO);
-            case "EDIT_DISH" -> processEditDishMessage(chatMessageDTO);
             case "DELETE_DISH" -> processDeleteDishMessage(chatMessageDTO);
             case "VIEW_SPECIFIC_DISH" -> processViewSpecificDishMessage(chatMessageDTO);
             case "VIEW_MENU" -> processViewMenuMessage();
-            case "OTHER" -> processOtherMessage();
-            default -> null;
+            default -> processUserMessage(intent);
         };
 
     }
 
-    private ChatResponseDTO processGreetingMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-        String prompt = "Aja como um atendente virtual do Restaurante Carinho, seja simpático e educado. O cliente enviou uma saudação: [" + chatMessageDTO.userMessage() + "]. Responda de maneira amigável e acolhedora.";
-
-        String response = sendRequest(prompt);
-
-        return new ChatResponseDTO(response, true);
-    }
-
-    private ChatResponseDTO processPresentationMessage() throws IOException, InterruptedException {
-        String prompt = "Aja como um atendente virtual do Restaurante Carinho. O cliente quer saber mais sobre o restaurante. Explique que o restaurante tem pratos deliciosos no cardápio e que você pode ajudar o cliente a navegar pelos sabores do restaurante!";
-
-        String response = sendRequest(prompt);
-
-        return new ChatResponseDTO(response, true);
+    private ChatResponseDTO processUserMessage(String intent) {
+        return new ChatResponseDTO(intent, true);
     }
 
     private ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
@@ -346,11 +331,11 @@ public class GeminiService {
         return dishCategory;
     }
 
-    private ChatResponseDTO processEditDishMessage(ChatMessageDTO chatMessageDTO) {
-        return null;
-    }
-
     private ChatResponseDTO processDeleteDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        if (!chatMessageDTO.userRole().equals("ROLE_ADMINISTRATOR")) {
+            return new ChatResponseDTO("Desculpe, mas você não possui a autorização necessária para acessar a funcionalidade de remoçao de pratos em nosso cardápio. Que tal dar uma olhadinha no cardápio?", false);
+        }
+
         String prompt1 = "A partir da seguinte frase: [" +
                 chatMessageDTO.userMessage() +
                 "], retorne apenas os nomes dos pratos do cardápio que o usuário deseja remover. " +
@@ -374,7 +359,7 @@ public class GeminiService {
             return new ChatResponseDTO(sendRequest(successfulRemovalPromt), true);
         }
 
-        String unsuccessfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que não foi possível escluir o prato " + trimmedDish +
+        String unsuccessfulRemovalPromt = "Escreva uma mensagem simples e curta, informando ao cliente que não foi possível excluir o prato " + trimmedDish +
                 ", pois não foi encontrado as informações referentes a esse prato no cardápio.";
         return new ChatResponseDTO(sendRequest(unsuccessfulRemovalPromt), true);
     }
@@ -405,14 +390,14 @@ public class GeminiService {
             }
         }
 
-        StringBuilder prompt2 = new StringBuilder("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes, não é necessário cumprimentá-los. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio: \n");
+        StringBuilder prompt2 = new StringBuilder(initialCommand + "Não é necessário cumprimentá-los. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio: \n");
 
         if(foundDishes.isEmpty()) {
             prompt2.append("No entanto, não foi possível encontrar nenhum prato solicitado pelo cliente, peça desculpas e diga que não foi possível encontrar as informações dos pratos solicitados.");
         } else {
-            prompt2.append("Sendo assim, apresente ao cliente os seguintes pratos: \n");
+            prompt2.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             for(Dish dish : foundDishes) {
-                prompt2.append("Prato: " + dish.getName() + ", Descrição: " + dish.getDescription() + ", Preço (R$): " + dish.getReaisPrice() + "\n");
+                prompt2.append("- Prato: " + dish.getName() + ", Descrição: " + dish.getDescription() + ", Preço (R$): " + dish.getReaisPrice() + "\n");
             }
         }
 
@@ -429,7 +414,7 @@ public class GeminiService {
     private ChatResponseDTO processViewMenuMessage() throws IOException, InterruptedException {
         List<DishDTO> dishDTOList = dishService.list();
 
-        StringBuilder prompt = new StringBuilder("Aja como um atendente virtual do Restaurante Carinho, sendo simpático, educado e convidativo enquanto auxilia os clientes. O cliente solicitou para visualizar os pratos disponíveis no cardápio.");
+        StringBuilder prompt = new StringBuilder(initialCommand + "O cliente solicitou para visualizar os pratos disponíveis no cardápio.");
 
         if(dishDTOList.isEmpty()) {
             prompt.append(" No entanto, o cardápio está vazio. Escreva uma mensagem pedindo desculpas e avisando que não há pratos no cardápio.");
@@ -448,12 +433,24 @@ public class GeminiService {
         return new ChatResponseDTO(response, true);
     }
 
+    private ChatResponseDTO processGreetingMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        String prompt = initialCommand + "O cliente enviou uma saudação: [" + chatMessageDTO.userMessage() + "]. Responda de maneira amigável e acolhedora.";
+
+        String response = sendRequest(prompt);
+
+        return new ChatResponseDTO(response, true);
+    }
+
+    private ChatResponseDTO processPresentationMessage() throws IOException, InterruptedException {
+        String prompt = initialCommand +  "O cliente quer saber mais sobre o restaurante. Explique que o restaurante tem pratos deliciosos no cardápio e que você pode ajudar o cliente a navegar pelos sabores do restaurante!";
+
+        String response = sendRequest(prompt);
+
+        return new ChatResponseDTO(response, true);
+    }
+
     private ChatResponseDTO processOtherMessage() throws IOException, InterruptedException {
-        String prompt = """
-                "Aja como um atendente virtual do Restaurante Carinho, sendo simpático, 
-                educado e convidativo enquanto auxilia os clientes. Retorne uma mensagem 
-                pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário."
-                """;
+        String prompt = initialCommand + "Retorne uma mensagem pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário.";
 
         String response = sendRequest(prompt);
         return new ChatResponseDTO(response, false);
