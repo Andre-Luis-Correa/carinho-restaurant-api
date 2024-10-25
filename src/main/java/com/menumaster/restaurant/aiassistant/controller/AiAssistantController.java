@@ -33,8 +33,8 @@ public class AiAssistantController {
     }
 
     @GetMapping("/transcribe-audio")
-    public ResponseEntity<String> transcribeAudioWithGemini(@RequestParam("file") MultipartFile audioFile) throws IOException, InterruptedException {
-        String fileUri = transcriptionService.uploadAudio(audioFile);
+    public ResponseEntity<String> transcribeAudioWithGemini(MultipartFile file) throws IOException, InterruptedException {
+        String fileUri = transcriptionService.uploadAudio(file);
 
         String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
         return ResponseEntity.ok().body(transcriptionResponse);

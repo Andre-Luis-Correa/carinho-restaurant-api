@@ -9,7 +9,7 @@ automatic_scaling:
 env_variables:
   ACTIVE_PROFILE: prod
   DATABASE_URL: projeto-esi:southamerica-east1:mysqldb
-  DATABASE_NAME: restaurant
+  DATABASE_NAME: restaurantdb
   DATABASE_USER: root
   DATABASE_PASSWORD: root
   SERVER_PORT: '8080'
