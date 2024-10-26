@@ -66,4 +66,8 @@ public class CategoryService {
         Page<Category> categoryPage = categoryRepository.findAll(pageable);
         return categoryPage.map(categoryToCategoryDTOMapper::convert);
     }
+
+    public boolean existById(Long id) {
+        return categoryRepository.existsById(id);
+    }
 }

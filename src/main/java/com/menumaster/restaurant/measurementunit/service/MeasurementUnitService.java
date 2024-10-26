@@ -69,4 +69,8 @@ public class MeasurementUnitService {
         Page<MeasurementUnit> measurementUnitPage = measurementUnitRepository.findAll(pageable);
         return measurementUnitPage.map(measurementUnitToMeasurementUnitDTOMapper::convert);
     }
+
+    public boolean existsById(Long id) {
+        return measurementUnitRepository.existsById(id);
+    }
 }

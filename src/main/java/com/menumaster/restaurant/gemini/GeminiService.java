@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatMessageDTO;
 import com.menumaster.restaurant.aiassistant.domain.dto.ChatResponseDTO;
 import com.menumaster.restaurant.category.domain.dto.CategoryDTO;
+import com.menumaster.restaurant.category.domain.model.Category;
 import com.menumaster.restaurant.category.service.CategoryService;
 import com.menumaster.restaurant.dish.domain.dto.DishDTO;
 import com.menumaster.restaurant.dish.domain.dto.DishFormDTO;
@@ -161,8 +162,43 @@ public class GeminiService {
             responseJson = responseJson.replace("[ERRO]", "");
             return new ChatResponseDTO(responseJson, false);
         }
+
         DishFormDTO dishFormDTO = parseDishFormDTO(responseJson);
-        return new ChatResponseDTO(dishFormDTO.toString(), true);
+
+        Category category;
+
+        if(categoryService.existById(dishFormDTO.categoryId())) {
+            category = categoryService.getOrThrowException(dishFormDTO.categoryId());
+        } else {
+            return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que a categoria informada pelo cliente é inválida."), false);
+        }
+
+        List<DishIngredient> dishIngredientList = new ArrayList<>();
+        for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
+            Ingredient ingredient;
+            MeasurementUnit measurementUnit;
+
+            if(ingredientService.existsById(dishIngredientFormDTO.ingredientId())){
+                ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
+            } else {
+                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que os ingredientes informados pelo cliente são inválidos."), false);
+            }
+
+            if(measurementUnitService.existsById(dishIngredientFormDTO.measurementUnitId())){
+                measurementUnit = measurementUnitService.getOrThrowException(dishIngredientFormDTO.measurementUnitId());
+            } else {
+                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que as unidades de medidas informadas pelo cliente são inválidas."), false);
+            }
+
+            DishIngredient dishIngredient = dishService.convertToDishIngredient(null, ingredient, measurementUnit, dishIngredientFormDTO);
+            dishIngredientList.add(dishIngredient);
+        }
+
+        DishDTO dishDTO = dishService.create(category, dishIngredientList, dishFormDTO);
+
+        String promptToIntroduceCreatedDish = String.format("Retorne uma mensagem de prato criado com sucesso. Apresente ao cliente o novo prato criado de forma criativa. As informações do novo prato são: nome = %s, descrição = %s. ", dishDTO.name(), dishDTO.description());
+
+        return new ChatResponseDTO(sendRequest(promptToIntroduceCreatedDish), true);
     }
 
     private String createDishCreationPrompt(String userMessage, List<CategoryDTO> categories, List<IngredientDTO> ingredients, List<MeasurementUnitDTO> units) {

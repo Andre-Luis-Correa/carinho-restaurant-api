@@ -78,4 +78,8 @@ public class IngredientService {
         }
         return ingredientRepository.findById(id).get();
     }
+
+    public boolean existsById(Long id) {
+        return ingredientRepository.existsById(id);
+    }
 }
