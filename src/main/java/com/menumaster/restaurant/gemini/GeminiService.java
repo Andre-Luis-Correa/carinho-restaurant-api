@@ -168,39 +168,65 @@ public class GeminiService {
     private String createDishCreationPrompt(String userMessage, List<CategoryDTO> categories, List<IngredientDTO> ingredients, List<MeasurementUnitDTO> units) {
         StringBuilder prompt = new StringBuilder("Atue como um assistente virtual para o Restaurante Carinho.");
 
+        if (!categories.isEmpty()) {
+            prompt.append("\n**Categorias Válidas**:\n");
+            for (CategoryDTO category : categories) {
+                prompt.append("Categoria válida -> Id: ").append(category.id()).append(", com nome: ").append(category.name()).append("\n");
+            }
+        } else {
+            prompt.append("\nNão existe nenhuma categoria válida cadastrada\n");
+        }
+
+        if (!ingredients.isEmpty()) {
+            prompt.append("\n**Ingredientes Válidos**:\n");
+            for (IngredientDTO ingredient : ingredients) {
+                prompt.append("Ingrediente válido -> Id: ").append(ingredient.id()).append(", com nome: ").append(ingredient.name()).append("\n");
+            }
+        } else {
+            prompt.append("\nNão existe nenhum ingrediente válido cadastrado\n");
+        }
+
+        if (!units.isEmpty()) {
+            prompt.append("\n**Unidades de Medida Válidas (Apenas Nomes Completos)**:\n");
+            for (MeasurementUnitDTO unit : units) {
+                prompt.append("Unidade de Medida válida -> Id: ").append(unit.id()).append(", com nome: ").append(unit.name()).append("\n");
+            }
+        } else {
+            prompt.append("\nNão existe nenhuma unidade de medida válida cadastrada\n");
+        }
+
         prompt.append(" O cliente enviou uma mensagem contendo informações sobre um prato a ser criado: [")
                 .append(userMessage).append("]. Extraia as informações necessárias e preencha o JSON com os dados dos DTOs `DishFormDTO` e `DishIngredientFormDTO`.\n\n")
                 .append("**Regras e Instruções para Extração e Validação dos Dados**:\n");
 
         prompt.append("""
-        1. Qualquer prato pode ter qualquer categoria, qualquer ingrediente e qualquer unidade de medida desde que todos sejam válidos e cadastrados no sistema. Não há restrições ou associações específicas entre o nome do prato, a categoria, o ingrediente e a unidade de medida.
-        2. Todos os dados obrigatórios devem estar presentes na mensagem. Se algum dado estiver ausente, retorne uma mensagem de erro começando com [ERRO], especificando o campo ausente.
-        3. Os ingredientes são obrigatórios. Cada prato deve incluir ao menos um ingrediente, e cada ingrediente informado deve ter uma quantidade e uma unidade de medida válidas. Caso falte algum desses elementos, retorne uma mensagem de erro começando com [ERRO].
-        4. O valor do prato em reais e o valor de custo em reais devem ser obrigatoriamente informados. Certifique-se de que o preço (`reaisPrice` e `reaisCostValue`) está em reais e tem 2 casas decimais. Arredonde valores, se necessário.
-        5. Defina sempre `isAvailable` como `true`.
-        6. Apenas uma categoria deve ser informada. Se mais de uma categoria for identificada, retorne uma mensagem de erro começando com [ERRO].
+    **Regras e Instruções para Extração e Validação dos Dados**:
+    
+    **Categoria**:
+    1. O nome da categoria deve ser mencionado explicitamente pelo cliente na mensagem e ser **exatamente igual a um dos nomes das categorias válidas listadas acima**.
+    2. Não associe nenhuma categoria automaticamente se o nome fornecido pelo cliente não corresponder exatamente a um dos nomes válidos.
+    3. Se a categoria estiver mencionada apenas como "categoria" sem nome, de forma incompleta, ou diferente dos nomes listados, retorne uma mensagem de erro começando com [ERRO].
+    4. Caso o cliente informe mais de uma categoria, também retorne uma mensagem de erro começando com [ERRO].
 
-        **IMPORTANTE**:
-        - Se todos os dados forem extraídos e validados corretamente, retorne apenas o JSON final, sem texto adicional.
-        - Caso algum erro ocorra, a resposta deve começar com [ERRO] e descrever o problema específico.
-        - Verifique exatamente as correspondências para ingredientes e unidades de medida conforme listados abaixo para evitar erros.
+    **Ingredientes**:
+    1. Ingredientes são obrigatórios para a criação de um prato. Cada prato deve incluir pelo menos um ingrediente válido, conforme listado acima.
+    2. Cada ingrediente deve ter uma quantidade especificada e uma unidade de medida válida (veja as unidades de medida válidas abaixo).
+    3. Se algum ingrediente não for encontrado na lista de ingredientes válidos ou se faltar quantidade ou unidade de medida, retorne uma mensagem de erro começando com [ERRO].
 
-        **Categorias Válidas**:
-    """);
+    **Unidade de Medida**:
+    1. A unidade de medida para cada ingrediente deve ser informada **exatamente conforme os nomes completos listados acima**. Não aceite siglas, abreviações ou variações.
+    2. Caso a unidade de medida informada pelo cliente não corresponda exatamente ao nome completo listado acima, retorne uma mensagem de erro começando com [ERRO].
+    
+    **Regras Gerais**:
+    1. Todos os dados obrigatórios devem estar presentes na mensagem do cliente. Se algum dado estiver ausente, retorne uma mensagem de erro começando com [ERRO], especificando o campo ausente.
+    2. O valor do prato em reais (`reaisPrice`) e o valor de custo (`reaisCostValue`) devem ser informados e ter 2 casas decimais. Arredonde valores, se necessário.
+    3. Defina sempre `isAvailable` como `true`.
 
-        for (CategoryDTO category : categories) {
-            prompt.append("Categoria -> Id: ").append(category.id()).append(", Nome: ").append(category.name()).append("\n");
-        }
-
-        prompt.append("\n**Ingredientes Válidos**:\n");
-        for (IngredientDTO ingredient : ingredients) {
-            prompt.append("Ingrediente -> Id: ").append(ingredient.id()).append(", Nome: ").append(ingredient.name()).append("\n");
-        }
-
-        prompt.append("\n**Unidades de Medida Válidas**:\n");
-        for (MeasurementUnitDTO unit : units) {
-            prompt.append("Unidade de Medida -> Id: ").append(unit.id()).append(", Nome: ").append(unit.name()).append(", Sigla: ").append(unit.acronym()).append("\n");
-        }
+    **IMPORTANTE**:
+    - Se todos os dados forem extraídos e validados corretamente, retorne apenas o JSON final, sem texto adicional.
+    - Caso algum erro ocorra, a resposta deve começar com [ERRO] e descrever o problema específico.
+    - Utilize apenas os dados listados acima para validar categoria, ingredientes e unidades de medida. Qualquer valor não listado deve ser tratado como inválido.
+""");
 
         prompt.append("\nFormato JSON esperado para o DTO:\n")
                 .append("""
@@ -225,6 +251,8 @@ public class GeminiService {
 
         return prompt.toString();
     }
+
+
 
     private DishFormDTO parseDishFormDTO(String responseJson) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
