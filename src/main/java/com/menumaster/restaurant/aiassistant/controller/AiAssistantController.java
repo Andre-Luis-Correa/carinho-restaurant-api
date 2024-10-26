@@ -32,8 +32,8 @@ public class AiAssistantController {
         return ResponseEntity.ok().body(chatResponseDTO);
     }
 
-    @GetMapping("/transcribe-audio")
-    public ResponseEntity<String> transcribeAudioWithGemini(MultipartFile file) throws IOException, InterruptedException {
+    @PostMapping("/transcribe-audio")
+    public ResponseEntity<String> transcribeAudioWithGemini(@RequestParam("file") MultipartFile file) throws IOException, InterruptedException {
         String fileUri = transcriptionService.uploadAudio(file);
 
         String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
