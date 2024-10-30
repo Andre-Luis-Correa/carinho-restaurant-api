@@ -11,8 +11,9 @@ import java.util.List;
 @Repository
 public interface DishIngredientRepository extends JpaRepository<DishIngredient, Long> {
 
-    boolean
-    existsDishIngredientByDish(Dish dish);
+    boolean existsDishIngredientByDish(Dish dish);
 
     List<DishIngredient> findAllByDish(Dish dish);
+
+    List<DishIngredient> findAllByIngredient(Ingredient ingredient);
 }

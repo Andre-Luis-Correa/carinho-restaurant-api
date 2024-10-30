@@ -82,4 +82,8 @@ public class IngredientService {
     public boolean existsById(Long id) {
         return ingredientRepository.existsById(id);
     }
+
+    public List<Ingredient> findByNameContainingIgnoreCase(String trimmedIngredientName) {
+        return ingredientRepository.findByNameContainingIgnoreCase(trimmedIngredientName);
+    }
 }

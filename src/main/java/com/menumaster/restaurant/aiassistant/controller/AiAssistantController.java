@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Log4j2
 @RestController
@@ -34,9 +35,12 @@ public class AiAssistantController {
 
     @PostMapping("/transcribe-audio")
     public ResponseEntity<String> transcribeAudioWithGemini(@RequestParam("file") MultipartFile file) throws IOException, InterruptedException {
+        log.info("Fazendo upload de audio!");
         String fileUri = transcriptionService.uploadAudio(file);
-
+        log.info("Nome do arquivo e bytes: " + file.getOriginalFilename());
+        log.info("Iniciando a transcrição de audio!");
         String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
+        log.info(transcriptionResponse);
         return ResponseEntity.ok().body(transcriptionResponse);
     }
 }

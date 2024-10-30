@@ -2,6 +2,8 @@ package com.menumaster.restaurant.transcription;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.menumaster.restaurant.exception.type.AudioTranscriptionException;
 import com.menumaster.restaurant.exception.type.ExtractingJsonDataException;
 import lombok.extern.log4j.Log4j2;
@@ -37,23 +39,32 @@ public class TranscriptionService {
 
     public String transcribeAudioWithGemini2(String audioUri) throws IOException, InterruptedException {
         String requestBody = String.format("""
-                {
-                    "contents": {
+            {
+                "contents": [
+                    {
                         "role": "user",
                         "parts": [
                             {
                                 "fileData": {
-                                    "mimeType": "audio/mp3",
+                                    "mimeType": "audio/mpeg",
                                     "fileUri": "%s"
                                 }
                             },
                             {
-                                "text": "Transcribe this audio."
+                                "text": "Transcreva esse audio"
                             }
                         ]
                     }
+                ],
+                "generationConfig": {
+                    "temperature": 1,
+                    "topK": 64,
+                    "topP": 0.95,
+                    "maxOutputTokens": 8192,
+                    "responseMimeType": "text/plain"
                 }
-                """, audioUri);
+            }
+            """, audioUri);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(geminiAudioUrl))
@@ -63,11 +74,12 @@ public class TranscriptionService {
 
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
+        log.info(response.body());
         return extractTextFromJson(response.body());
     }
 
     public static String extractTextFromJson(String response) {
+        log.info("Extraindo resposta do audio!");
         try {
             ObjectMapper objectMapper = new ObjectMapper();
 
@@ -80,9 +92,10 @@ public class TranscriptionService {
                     .path("parts")
                     .get(0)
                     .path("text");
-
+            log.info("Essa é a resposta: " + textNode.asText());
             return textNode.asText();
         } catch (Exception e) {
+            log.info("EXCEÇÂOOOOO");
             throw new ExtractingJsonDataException("text");
         }
     }
@@ -121,12 +134,13 @@ public class TranscriptionService {
             return extractFileUriFromJson(response.toString());
 
         } catch (Exception e) {
+            log.info("Exceção upload audio");
             throw new AudioTranscriptionException();
         }
     }
 
-
     public static String extractFileUriFromJson(String jsonString) {
+        log.info("Extraindo nome do audio storage");
         try {
             ObjectMapper objectMapper = new ObjectMapper();
 
@@ -136,8 +150,10 @@ public class TranscriptionService {
                     .path("file")
                     .path("uri");
 
+            log.info(uriNode.asText());
             return uriNode.asText();
         } catch (Exception e) {
+            log.info("Exceção ao extrair nome do audio storage");
             throw new ExtractingJsonDataException("uri");
         }
     }

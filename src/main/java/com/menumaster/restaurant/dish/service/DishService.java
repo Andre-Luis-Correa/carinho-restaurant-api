@@ -201,4 +201,16 @@ public class DishService {
             return dishRepository.findFirstByNameContainingIgnoreCase(name).get();
         return null;
     }
+
+    public List<Dish> listAllByCategory(Category category) {
+        return dishRepository.findAllByCategory(category);
+    }
+
+    public List<DishIngredient> listAllByIngredient(Ingredient ingredient) {
+        return dishIngredientRepository.findAllByIngredient(ingredient);
+    }
+
+    public List<DishIngredient> listAllByDish(Dish dish) {
+        return dishIngredientRepository.findAllByDish(dish);
+    }
 }

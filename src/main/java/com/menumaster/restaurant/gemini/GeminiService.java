@@ -119,9 +119,11 @@ public class GeminiService {
         intents.add("2. Se o cliente enviar uma saudação, retorne apenas uma mensagem de saudação ao cliente");
         intents.add("3. Se o cliente quiser criar um novo pratoo, retorne apenas a palavra entre colchetes [CREATE_DISH].");
         intents.add("4. Se o cliente deseja remover um prato, retorne apenas a palavra entre colchetes [DELETE_DISH].");
-        intents.add("5. Se o cliente deseja visualizar as informações de um prato específico, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH].");
-        intents.add("6. Se o cliente estiver interessado em visualizar o cardápio completo, retorne apenas a palavra entre colchetes [VIEW_MENU].");
-        intents.add("7. Se a mensagem do cliente não se encaixou em nenhuma das regras anteriores, então retorne apenas uma mensagem pedindo desculpas e explicando que não conseguiu interpretar a mensagem do cliente.");
+        intents.add("5. Se o cliente deseja visualizar as informações de um prato específico, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH_MENU].");
+        intents.add("6. Se o cliente estiver interessado em visualizar os pratos do cardápio em uma categoria específica, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH_CATEGORY].");
+        intents.add("7. Se o cliente estiver interessado em visualizar os pratos do cardápio que possuem um determinado ingrediente, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH_INGREDIENT].");
+        intents.add("8. Se o cliente estiver interessado em visualizar o cardápio completo, retorne apenas a palavra entre colchetes [VIEW_MENU].");
+        intents.add("9. Se a mensagem do cliente não se encaixou em nenhuma das regras anteriores, então retorne apenas uma mensagem pedindo desculpas e explicando que não conseguiu interpretar a mensagem do cliente.");
 
         StringBuilder prompt = new StringBuilder(getInitialCommand(userMessage) + "Sua tarefa é retornar uma mensagem a partir da mensagem do cliente, além disso, a mensagem deve ser escrita com base nas seguintes regras: ");
         for(int i = 0; i < intents.size()-1; i++) {
@@ -136,13 +138,17 @@ public class GeminiService {
     public ChatResponseDTO processMessageBasedOnIntent(ChatMessageDTO chatMessageDTO, String intent) throws IOException, InterruptedException {
         if(intent.contains("CREATE_DISH")) intent = "CREATE_DISH";
         if(intent.contains("DELETE_DISH")) intent = "DELETE_DISH";
-        if(intent.contains("VIEW_SPECIFIC_DISH")) intent = "VIEW_SPECIFIC_DISH";
+        if(intent.contains("VIEW_SPECIFIC_DISH_MENU")) intent = "VIEW_SPECIFIC_DISH_MENU";
+        if(intent.contains("VIEW_SPECIFIC_DISH_CATEGORY")) intent = "VIEW_SPECIFIC_DISH_CATEGORY";
+        if(intent.contains("VIEW_SPECIFIC_DISH_INGREDIENT")) intent = "VIEW_SPECIFIC_DISH_INGREDIENT";
         if(intent.contains("VIEW_MENU")) intent = "VIEW_MENU";
-
+        log.info("Intenção tratada:" + intent);
         return switch (intent) {
             case "CREATE_DISH" -> processCreateDishMessage(chatMessageDTO);
             case "DELETE_DISH" -> processDeleteDishMessage(chatMessageDTO);
-            case "VIEW_SPECIFIC_DISH" -> processViewSpecificDishMessage(chatMessageDTO);
+            case "VIEW_SPECIFIC_DISH_MENU" -> processViewSpecificDishMessage(chatMessageDTO);
+            case "VIEW_SPECIFIC_DISH_CATEGORY" -> processViewSpecificDishCategoryMessage(chatMessageDTO);
+            case "VIEW_SPECIFIC_DISH_INGREDIENT" -> processViewSpecificDishIngredientMessage(chatMessageDTO);
             case "VIEW_MENU" -> processViewMenuMessage();
             default -> processUserMessage(intent);
         };
@@ -289,7 +295,6 @@ public class GeminiService {
     }
 
 
-
     private DishFormDTO parseDishFormDTO(String responseJson) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode rootNode = objectMapper.readTree(responseJson);
@@ -323,17 +328,6 @@ public class GeminiService {
             return new ChatResponseDTO("Desculpe, mas você não possui a autorização necessária para acessar a funcionalidade de remoçao de pratos em nosso cardápio. Que tal dar uma olhadinha no cardápio?", false);
         }
 
-//        String prompt1 = "A partir da seguinte frase: [" +
-//                chatMessageDTO.userMessage() +
-//                "], retorne uma mensagem contendo apenas os nomes dos pratos do cardápio que o usuário deseja remover ou excluir. " +
-//                "Cada nome deve ser separado por um ponto e vírgula [;], " +
-//                "caso haja apenas o nome de um prato, retorne apenas o nome dele sem [;].\n" +
-//                """
-//                Por exemplo, se o cliente enviar a mensagem "quero excluir o prato espetinho" retorne uma mensagem contendo
-//                apenas "espetinho".
-//                Outro exemplo: se o cliente enviar a mensagem "quero excluir o espetinho e o bolo de cenoura, então retorne
-//                uma mensagem contento apenas "espetinho;bolo de cenoura".
-//                """;
         String prompt1 = "Dada a seguinte frase do cliente: [" + chatMessageDTO.userMessage() + "], identifique e retorne apenas os nomes dos pratos que o cliente deseja remover ou excluir do cardápio. Responda da seguinte forma:\n" +
                 "- Caso haja um único prato, retorne somente o nome do prato, sem adições.\n" +
                 "- Caso o cliente deseje remover mais de um prato, liste cada nome separado por ponto e vírgula [;].\n\n" +
@@ -400,7 +394,14 @@ public class GeminiService {
             promptIntroduceSpecificDishes.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             int i = 1;
             for(Dish dish : foundDishes) {
-                promptIntroduceSpecificDishes.append(i++).append("Prato: ").append(dish.getName()).append(", Descrição: ").append(dish.getDescription()).append(", Preço (R$): ").append(dish.getReaisPrice()).append("\n");
+                promptIntroduceSpecificDishes.append(i++).append("Prato: ").append(dish.getName()).append(", Descrição: ").append(dish.getDescription()).append(", Preço (R$): ").append(dish.getReaisPrice()).append(", ");
+                List<DishIngredient> dishIngredientList = dishService.listAllByDish(dish);
+                promptIntroduceSpecificDishes.append("Ingredientes: ");
+                int j = 1;
+                for(DishIngredient dishIngredient : dishIngredientList) {
+                    promptIntroduceSpecificDishes.append(j++).append(" - ").append(dishIngredient.getIngredient().getName());
+                }
+                promptIntroduceSpecificDishes.append("\n");
             }
         }
 
@@ -414,6 +415,174 @@ public class GeminiService {
 
         return new ChatResponseDTO(sendRequest(promptIntroduceSpecificDishes.toString()), true);
     }
+
+    private ChatResponseDTO processViewSpecificDishCategoryMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        List<CategoryDTO> allCategoryList = categoryService.list();
+        log.info("TESTE AQUI");
+        StringBuilder validCategoriesPrompt = new StringBuilder();
+        if (!allCategoryList.isEmpty()) {
+            validCategoriesPrompt.append("\nAs categorias válidas são:\n");
+            for (CategoryDTO category : allCategoryList) {
+                validCategoriesPrompt.append("Categoria válida -> Id: ").append(category.id()).append(", com nome: ").append(category.name()).append("\n");
+            }
+        } else {
+            validCategoriesPrompt.append("\nNão existe nenhuma categoria válida cadastrada\n");
+            String sorryPrompt = "Escreva uma mensaggem breve de desculpa ao cliente. Informando que a categoria informada não é válida.";
+            return new ChatResponseDTO(sendRequest(sorryPrompt), false);
+        }
+        log.info("TESTE AQUI");
+        String promptGetCategoriesNames = validCategoriesPrompt +  "A partir da seguinte frase enviada pelo usuário: ["
+                + chatMessageDTO.userMessage() +
+                """
+                ], retorne apenas e somente, sem nenhuma mensagem adicional, extraia somente os nomes das categorias que o usuário digitou na mensagem que ele enviou.
+                Caso o usuário informe  apenas categorias que não existem, então retorne apenas a palavra
+                entre colchetes [ERRO]. Caso todas as categorias digitadas pelo usuário sejam válidas, você deve retornar uma mensagem onde
+                cada nome válido de categoria deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de uma categoria, 
+                retorne apenas o nome dele sem [;]
+                """;
+
+        log.info(promptGetCategoriesNames);
+        String categoriesName = sendRequest(promptGetCategoriesNames);
+        log.info(categoriesName);
+        if(categoriesName.contains("ERRO")) {
+            String sorryPrompt = "Escreva uma mensaggem breve de desculpa ao cliente. Informando que a categoria informada não é válida.";
+            return new ChatResponseDTO(sendRequest(sorryPrompt), false);
+        }
+
+        String[] categoryNameList = categoriesName.split(";");
+
+        List<Category> foundCategories = new ArrayList<>();
+        List<String> notFoundCategories = new ArrayList<>();
+
+        for(String categoryName: categoryNameList) {
+            String trimmedCategoryName = categoryName.trim();
+            List<Category> categoryList = categoryService.findByNameContainingIgnoreCase(trimmedCategoryName);
+
+
+            if (!categoryList.isEmpty()) foundCategories.addAll(categoryList);
+            else notFoundCategories.add(categoryName);
+        }
+
+        StringBuilder promptIntroduceSpecificDishesWithCategory = new StringBuilder("Não envie nenhuma saudação ao cliente. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio de acordo com categoria. ");
+
+        if(foundCategories.isEmpty()) {
+            promptIntroduceSpecificDishesWithCategory.append("No entanto, não foi possível encontrar nenhuma categoria solicitada pelo cliente, peça desculpas e diga que não foi possível encontrar a categoria solicitada. Além disso, recomende as seguintes categorias válidas: " + validCategoriesPrompt);
+        } else {
+            promptIntroduceSpecificDishesWithCategory.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
+            int i = 1;
+            for(Category category : foundCategories) {
+                List<Dish> dishList = dishService.listAllByCategory(category);
+
+                if(!dishList.isEmpty()) {
+                    promptIntroduceSpecificDishesWithCategory.append("Pratos na categoria ").append(category.getName()).append(": \n");
+
+                    for (Dish dish : dishList) {
+                        promptIntroduceSpecificDishesWithCategory.append(i++).append("Prato: ").append(dish.getName()).append(", Descrição: ").append(dish.getDescription()).append(", Preço (R$): ").append(dish.getReaisPrice()).append(", Category: ").append(category.getName()).append("\n");
+                    }
+
+                    i = 1;
+                } else {
+                    promptIntroduceSpecificDishesWithCategory.append("\nNão foi possível encontrar pratos na categoria ").append(category.getName());
+                }
+
+            }
+        }
+
+        if(!notFoundCategories.isEmpty()) {
+            promptIntroduceSpecificDishesWithCategory.append("Além disso, peça desculpas e diga que não conseguiu encontrar informações a respeito dos seguintes categorias: ");
+            int i = 1;
+            for(String categoryName : notFoundCategories) {
+                promptIntroduceSpecificDishesWithCategory.append(i++).append("Category: ").append(categoryName).append("\n");
+            }
+        }
+
+        return new ChatResponseDTO(sendRequest(promptIntroduceSpecificDishesWithCategory.toString()), true);
+    }
+
+    private ChatResponseDTO processViewSpecificDishIngredientMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
+        List<IngredientDTO> allIngredientList = ingredientService.list();
+
+        StringBuilder validIngredientsPrompt = new StringBuilder();
+        if (!allIngredientList.isEmpty()) {
+            validIngredientsPrompt.append("\nOs ingredientes válidos são:\n");
+            for (IngredientDTO ingredient : allIngredientList) {
+                validIngredientsPrompt.append("Ingrediente válido -> Id: ").append(ingredient.id()).append(", com nome: ").append(ingredient.name()).append("\n");
+            }
+        } else {
+            validIngredientsPrompt.append("\nNão existe nenhum ingrediente válido cadastrado\n");
+        }
+
+        String promptGetIngredientNames = validIngredientsPrompt + "A partir da seguinte frase enviada pelo usuário: ["
+                + chatMessageDTO.userMessage() +
+                """
+                ], retorne apenas e somente, sem nenhuma mensagem adicional, extraia somente os nomes dos ingredientes que o usuário digitou na mensagem que ele enviou.
+                Caso o usuário informe apenas ingredientes que não existem, então retorne apenas a palavra
+                entre colchetes [ERRO]. Caso todos os ingredientes digitados pelo usuário sejam válidos, você deve retornar uma mensagem onde
+                cada nome válido de ingrediente deve ser separado por um ponto e vírgula [;], caso haja apenas o nome de um ingrediente, 
+                retorne apenas o nome dele sem [;]
+                """;
+
+        log.info(promptGetIngredientNames);
+
+        String ingredientsNames = sendRequest(promptGetIngredientNames);
+        log.info(ingredientsNames);
+        if(ingredientsNames.contains("ERRO")) {
+            String sorryPrompt = "Escreva uma mensagem breve de desculpa ao cliente. Informando apenas que os ingredientes informados são inválidos.";
+            return new ChatResponseDTO(sendRequest(sorryPrompt), false);
+        }
+
+        String[] ingredientNameList = ingredientsNames.split(";");
+
+        List<Ingredient> foundIngredients = new ArrayList<>();
+        List<String> notFoundIngredients = new ArrayList<>();
+
+        for(String ingredientName : ingredientNameList) {
+            String trimmedIngredientName = ingredientName.trim();
+            List<Ingredient> ingredientList = ingredientService.findByNameContainingIgnoreCase(trimmedIngredientName);
+
+            if (!ingredientList.isEmpty()){
+                log.info("achei o ingrediente " + ingredientName);
+                foundIngredients.addAll(ingredientList);
+            }
+            else notFoundIngredients.add(ingredientName);
+        }
+
+        StringBuilder promptIntroduceSpecificDishesWithIngredient = new StringBuilder("Não envie nenhuma saudação ao cliente. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio de acordo com ingredientes. ");
+
+        if(foundIngredients.isEmpty()) {
+            promptIntroduceSpecificDishesWithIngredient.append("No entanto, não foi possível encontrar nenhum ingrediente solicitado pelo cliente, peça desculpas e apenas diga que não foi possível encontrar pratos com o ingrediente solicitado.");
+        } else {
+            promptIntroduceSpecificDishesWithIngredient.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
+            int i = 1;
+            for(Ingredient ingredient : foundIngredients) {
+                log.info(ingredient.getName());
+                List<DishIngredient> dishIngredientList = dishService.listAllByIngredient(ingredient);
+
+                if(!dishIngredientList.isEmpty()) {
+                    promptIntroduceSpecificDishesWithIngredient.append("Pratos com o ingrediente ").append(ingredient.getName()).append(": \n");
+
+                    for (DishIngredient dishIngredient : dishIngredientList) {
+                        promptIntroduceSpecificDishesWithIngredient.append(i++).append("Prato: ").append(dishIngredient.getDish().getName()).append(", Descrição: ").append(dishIngredient.getDish().getDescription()).append(", Preço (R$): ").append(dishIngredient.getDish().getReaisPrice()).append(", Ingrediente: ").append(ingredient.getName()).append("\n");
+                    }
+
+                    i = 1;
+                } else {
+                    promptIntroduceSpecificDishesWithIngredient.append("\nNão foi possível encontrar pratos que tenham o ingrediente ").append(ingredient.getName());
+                }
+            }
+        }
+
+        if(!notFoundIngredients.isEmpty()) {
+            promptIntroduceSpecificDishesWithIngredient.append("Além disso, peça desculpas e apenas diga que não conseguiu encontrar informações a respeito de pratos com os seguintes ingredientes: ");
+            int i = 1;
+            for(String ingredientName : notFoundIngredients) {
+                promptIntroduceSpecificDishesWithIngredient.append(i++).append("Ingrediente: ").append(ingredientName).append("\n");
+            }
+        }
+
+        return new ChatResponseDTO(sendRequest(promptIntroduceSpecificDishesWithIngredient.toString()), true);
+    }
+
 
     private ChatResponseDTO processViewMenuMessage() throws IOException, InterruptedException {
         List<DishDTO> dishDTOList = dishService.list();
@@ -434,220 +603,5 @@ public class GeminiService {
         String response = sendRequest(prompt.toString());
         return new ChatResponseDTO(response, true);
     }
-
-//    private ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-//        if (!chatMessageDTO.userRole().equals("ROLE_ADMINISTRATOR")) {
-//            return new ChatResponseDTO("Desculpe, mas você não possui a autorização necessária para acessar a funcionalidade de criação de pratos em nosso cardápio. Que tal dar uma olhadinha no cardápio?", false);
-//        }
-//
-//        List<String> validationErrors = new ArrayList<>();
-//
-//        String dishName = getDishNameFromUserMessage(chatMessageDTO.userMessage());
-//        if(dishName != null && dishName.contains("ERROR")) {
-//            validationErrors.add("O nome do prato não foi informado corretamente");
-//        }
-//
-//        String dishDescription = getDishDescriptionFromUserMessage(chatMessageDTO.userMessage());
-//        if(dishDescription != null && dishDescription.contains("ERROR")) {
-//            validationErrors.add("A descrição do prato não foi informada corretamente");
-//        }
-//
-//        String dishReaisPrice = getDishReaisPriceFromUserMessage(chatMessageDTO.userMessage());
-//        if(dishReaisPrice != null && dishReaisPrice.contains("ERRO")) {
-//            validationErrors.add("O preço em reais (R$) do prato não foi informado corretamente.");
-//        }
-//
-//        String dishReaisCostPrice = getDishReaisCostPriceFromUserMessage(chatMessageDTO.userMessage());
-//        if(dishReaisCostPrice != null && dishReaisCostPrice.contains("ERRO")) {
-//            validationErrors.add("O preço de custo em reais (R$) do prato não foi informado corretamente.");
-//        }
-//
-//        String dishIsAvailable = "true";
-//
-//        String dishCategoryId = getDishCategoryFromUserMessage(chatMessageDTO.userMessage());
-//        if(dishCategoryId != null && dishCategoryId.contains("ERRO")) {
-//            validationErrors.add("O categoria do prato não foi informada corretamente.");
-//        }
-//
-//        String jsonAndRulesPrompt = """
-//            {
-//              "name": "nome do prato informado pelo usuário",
-//              "description": "Descrição do prato informada pelo usuário",
-//              "reaisPrice": valor em reais (R$) do prato informado pelo usuário,
-//              "pointsPrice": Este valor você pode calcular automaticamente, sabendo que 1 ponto corresponde a R$ 0,10,
-//              "reaisCostValue": Este é o valor de custo real informado pelo usuário,
-//              "isAvailable": insira sempre o valor true,
-//              "categoryId": insira o id da categoria do prato informado pelo usuário, desde que exista entre as categorias pré cadastradas,
-//              "dishIngredientFormDTOList": [
-//                {
-//                  "ingredientId": informe o id do ingrediente informado pelo usuário, desde que ela exista entre os ingredientes pré cadastrados,
-//                  "quantity": informe a quantidade do ingrediente informado pelo usuário,
-//                  "measurementUnitId": informe o id da unidade de medida informada pelo usuário para o ingrediente, desde que exita entra as unidades de medidas pré cadastradas
-//                }
-//              ]
-//            }
-//        """;
-//
-//        // Carregar dados existentes de categorias, unidades de medida e ingredientes
-//        List<CategoryDTO> categoryDTOList = categoryService.list();
-//        List<MeasurementUnitDTO> measurementUnitDTOList = measurementUnitService.list();
-//        List<IngredientDTO> ingredientDTOList = ingredientService.list();
-//
-//        // Gerar a lista de dados cadastrados
-//        StringBuilder registeredDataPrompt = new StringBuilder("Apenas os dados pré-cadastrados para categoria, unidade de medida e ingrediente podem ser informados pelo usuário. Os dados ppré-cadastrados são os seguintes: \n");
-//
-//        for (CategoryDTO categoryDTO : categoryDTOList) {
-//            registeredDataPrompt.append("Categoria -> Id:  " + categoryDTO.id() + " Nome: " + categoryDTO.name() + "\n");
-//        }
-//        for (MeasurementUnitDTO measurementUnitDTO : measurementUnitDTOList) {
-//            registeredDataPrompt.append("Unidade de Medida -> Id: " + measurementUnitDTO.id() + " Nome: " + measurementUnitDTO.name() + " Sigla: " + measurementUnitDTO.acronym() + "\n");
-//        }
-//        for (IngredientDTO ingredientDTO : ingredientDTOList) {
-//            registeredDataPrompt.append("Ingrediente -> Id: " + ingredientDTO.id() + " Nome: " + ingredientDTO.name() + "\n");
-//        }
-//
-//        // Enviar o prompt ao Gemini e retornar a resposta
-//        //return new ChatResponseDTO(sendRequest(prompt), true);
-//        return new ChatResponseDTO(dishName + "\n" + dishDescription + "\n" + dishReaisPrice + "\n" + dishReaisCostPrice
-//                + dishCategoryId, false);
-//    }
-//
-//    private String getDishNameFromUserMessage(String userMessage) throws IOException, InterruptedException {
-//        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
-//                """
-//                A partir dessa mensagem identifique o nome do prato e se identificado retorne apenas o nome do prato.
-//                Caso não seja possível identificar o nome do prato retorne apenas a palavra [ERRO].
-//
-//                Exemplos:
-//
-//                [Quero criar um prato com nome farofa] = retorne apenas [farofa]
-//                [Quero criar o prato canjica] = retorne apenas [canjica].
-//                [Quero criar um prato] = retorne apenas [ERRO], pois não foi informado o nome.
-//                """;
-//
-//        String dishName = sendRequest(prompt);
-//        log.info("Nome do prato: " + dishName);
-//
-//        return dishName;
-//    }
-//
-//    private String getDishDescriptionFromUserMessage(String userMessage) throws IOException, InterruptedException {
-//        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
-//                """
-//                A partir dessa mensagem identifique a descrição do prato e se identificado retorne apenas a descrição do prato.
-//                Caso não seja possível identificar a descrição do prato retorne apenas a palavra [ERRO].
-//
-//                Exemplos:
-//
-//                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento] = retorne apenas [delicioso e suculento].
-//                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho] = retorne apenas [irresístivel sabor do restaurante carinho].
-//                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira] = retorne apenas [delicioso sabor de sobremesa brasileira].
-//                [Quero criar um prato chamado costelão] = retorne apenas a palavra [ERRO], pois não foi informado uma descrição para o prato.
-//                """;
-//
-//        String dishDescription = sendRequest(prompt);
-//        log.info("Descrição do prato: " + dishDescription);
-//
-//        return dishDescription;
-//    }
-//
-//    private String getDishReaisPriceFromUserMessage(String userMessage) throws IOException, InterruptedException {
-//        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
-//                """
-//                A partir dessa mensagem identifique o preço em reais (R$) do prato e se identificado retorne apenas o preço em reais (R$) do prato.
-//                Caso não seja possível identificar o preço em reais (R$) do prato retorne apenas a palavra [ERRO].
-//
-//                Exemplos:
-//
-//                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90] = retorne apenas [29.90].
-//                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais] = retorne apenas [29.90].
-//                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais] = retorne apenas [29].
-//                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento] = retorne apenas a palavra [ERRO], pois não foi informado o preço em reais (R$) para o prato.
-//                Observação: caso a pessoa tenha digitado um valor númerico incorreto para o preço, por exemplo, 30.9.9; 39,9,9; 35.0000,4, ou outros, retorne apenas [ERRO].
-//                Além disso, os únicos valores númericos aceitos para o preço seguem o padrão [0-9]*.[0-9][0-9] ou [0-9]*,[0-9][0-9], sempre arredonde para 2 casas decimais.
-//                """;
-//
-//        String dishReaisPrice = sendRequest(prompt);
-//        log.info("Preço em R$ do prato: " + dishReaisPrice);
-//
-//        return dishReaisPrice;
-//    }
-//
-//    private String getDishReaisCostPriceFromUserMessage(String userMessage) throws IOException, InterruptedException {
-//        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
-//                """
-//                A partir dessa mensagem identifique o preço de custo em reais (R$) do prato e se identificado retorne apenas o preço de custo em reais (R$) do prato.
-//                Caso não seja possível identificar o preço de custo em reais (R$) do prato retorne apenas a palavra [ERRO].
-//
-//                Exemplos:
-//
-//                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90, com preço de custo de 20 reais.] = retorne apenas [20].
-//                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais, que tem um preço real de R$ 22.00] = retorne apenas [22.00].
-//                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais e preço de custo de R$ 15] = retorne apenas [15].
-//                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento, com valor de 40 reais] = retorne apenas a palavra [ERRO], pois não foi informado o preço de custo em reais (R$) para o prato.
-//                Observação: caso a pessoa tenha digitado um valor númerico incorreto para o preço de custo, por exemplo, 30.9.9; 39,9,9; 35.0000,4, ou outros, retorne apenas [ERRO].
-//                Além disso, os únicos valores númericos aceitos para o preço de custo seguem o padrão [0-9]*.[0-9][0-9] ou [0-9]*,[0-9][0-9], sempre arredonde para 2 casas decimais.
-//                """;
-//
-//        String dishReaisCostPrice = sendRequest(prompt);
-//        log.info("Preço de custo em R$ do prato: " + dishReaisCostPrice);
-//
-//        return dishReaisCostPrice;
-//    }
-//
-//    private String getDishCategoryFromUserMessage(String userMessage) throws IOException, InterruptedException {
-//        List<CategoryDTO> categoryDTOList = categoryService.list();
-//
-//        StringBuilder validCategoryPrompt = new StringBuilder("As categorias válidas são: \n");
-//        for (CategoryDTO categoryDTO : categoryDTOList) {
-//            validCategoryPrompt.append("Categoria -> Id:  " + categoryDTO.id() + " Nome: " + categoryDTO.name() + "\n");
-//        }
-//
-//        String prompt = "O usuário enviou a seguinte mensagem com a intenção de criar um prato: [" + userMessage + "]." +
-//                """
-//                A partir dessa mensagem identifique categoria do prato e se identificado retorne apenas o id da categoria válido do prato.
-//                Caso não seja possível identificar a categoria do prato retorne apenas a palavra [ERRO].
-//                """
-//                + validCategoryPrompt +
-//                """
-//                Exemplos:
-//
-//                [Quero criar um prato com nome farofa, com a descrição delicioso e suculento que custe R$ 29,90, com preço de custo de 20 reais, na categoria brasil.] = retorne apenas um numero que representa o id da categoria válida.
-//                [Quero criar um prato com nome espetinho, irresístivel sabor do restaurante carinho, custando 29.90 reais, que tem um preço real de R$ 22.00, na categoria carnes] = retorne apenas um numero que representa o id da categoria válida.
-//                [Quero criar o prato canjica, delicioso sabor de sobremesa brasileira, com valor de 29 reais e preço de custo de R$ 15, insira-o na categoria sobremesas] = retorne apenas um numero que representa o id da categoria válida.
-//                [Quero criar um prato chamado costelão, com a descrição saboroso e suculento, com valor de 40 reais e preço de custo de 20 reais.] = retorne apenas a palavra [ERRO], pois não foi informado a categoria para o prato.
-//                Observação: caso a categoria informada não esteja entre as categorias válidas, retorne [ERRO].
-//                Além disso, caso o usuário informe mais de uma categoria, retorne apenas [ERRO].
-//                """;
-//
-//        String dishCategory = sendRequest(prompt);
-//        log.info(prompt);
-//        log.info("Categoria do prato: " + dishCategory);
-//
-//        return dishCategory;
-//    }
-
-//    private ChatResponseDTO processGreetingMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-//        String prompt = initialCommand + "O cliente enviou uma saudação: [" + chatMessageDTO.userMessage() + "]. Responda de maneira amigável e acolhedora.";
-//
-//        String response = sendRequest(prompt);
-//
-//        return new ChatResponseDTO(response, true);
-//    }
-//
-//    private ChatResponseDTO processPresentationMessage() throws IOException, InterruptedException {
-//        String prompt = initialCommand +  "O cliente quer saber mais sobre o restaurante. Explique que o restaurante tem pratos deliciosos no cardápio e que você pode ajudar o cliente a navegar pelos sabores do restaurante!";
-//
-//        String response = sendRequest(prompt);
-//
-//        return new ChatResponseDTO(response, true);
-//    }
-//
-//    private ChatResponseDTO processOtherMessage() throws IOException, InterruptedException {
-//        String prompt = initialCommand + "Retorne uma mensagem pedindo desculpas e dizendo que não conseguiu processar a mensagem do usuário.";
-//
-//        String response = sendRequest(prompt);
-//        return new ChatResponseDTO(response, false);
-//    }
 
 }

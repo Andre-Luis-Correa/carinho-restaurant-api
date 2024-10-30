@@ -70,4 +70,8 @@ public class CategoryService {
     public boolean existById(Long id) {
         return categoryRepository.existsById(id);
     }
+
+    public List<Category> findByNameContainingIgnoreCase(String trimmedCategoryName) {
+        return categoryRepository.findByNameContainingIgnoreCase(trimmedCategoryName);
+    }
 }
