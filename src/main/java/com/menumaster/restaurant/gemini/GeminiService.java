@@ -123,7 +123,7 @@ public class GeminiService {
         intents.add("6. Se o cliente estiver interessado em visualizar os pratos do cardápio em uma categoria específica, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH_CATEGORY].");
         intents.add("7. Se o cliente estiver interessado em visualizar os pratos do cardápio que possuem um determinado ingrediente, retorne apenas a palavra entre colchetes [VIEW_SPECIFIC_DISH_INGREDIENT].");
         intents.add("8. Se o cliente estiver interessado em visualizar o cardápio completo, retorne apenas a palavra entre colchetes [VIEW_MENU].");
-        intents.add("9. Se a mensagem do cliente não se encaixou em nenhuma das regras anteriores, então retorne apenas uma mensagem pedindo desculpas e explicando que não conseguiu interpretar a mensagem do cliente.");
+        intents.add("9. Se a mensagem do cliente não se encaixou em nenhuma das regras anteriores, então retorne apenas uma mensagem explicando que não conseguiu interpretar a mensagem do cliente.");
 
         StringBuilder prompt = new StringBuilder(getInitialCommand(userMessage) + "Sua tarefa é retornar uma mensagem a partir da mensagem do cliente, além disso, a mensagem deve ser escrita com base nas seguintes regras: ");
         for(int i = 0; i < intents.size()-1; i++) {
@@ -176,7 +176,7 @@ public class GeminiService {
         if(categoryService.existById(dishFormDTO.categoryId())) {
             category = categoryService.getOrThrowException(dishFormDTO.categoryId());
         } else {
-            return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que a categoria informada pelo cliente é inválida."), false);
+            return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem explicando que a categoria informada pelo cliente é inválida."), false);
         }
 
         List<DishIngredient> dishIngredientList = new ArrayList<>();
@@ -187,13 +187,13 @@ public class GeminiService {
             if(ingredientService.existsById(dishIngredientFormDTO.ingredientId())){
                 ingredient = ingredientService.getOrThrowException(dishIngredientFormDTO.ingredientId());
             } else {
-                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que os ingredientes informados pelo cliente são inválidos."), false);
+                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem explicando que os ingredientes informados pelo cliente são inválidos."), false);
             }
 
             if(measurementUnitService.existsById(dishIngredientFormDTO.measurementUnitId())){
                 measurementUnit = measurementUnitService.getOrThrowException(dishIngredientFormDTO.measurementUnitId());
             } else {
-                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem de desculpa explicando que as unidades de medidas informadas pelo cliente são inválidas."), false);
+                return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem explicando que as unidades de medidas informadas pelo cliente são inválidas."), false);
             }
 
             DishIngredient dishIngredient = dishService.convertToDishIngredient(null, ingredient, measurementUnit, dishIngredientFormDTO);
@@ -344,7 +344,7 @@ public class GeminiService {
         String[] dishNameList = dishName.split(";");
         log.info(dishName);
         if(dishNameList.length > 1) {
-            String sorryPrompt = "Não cumprimente o cliente e escreva uma mensagem simples e curta de desculpa ao cliente, informando que não é possível remover do cardápio mais de um prato por vez.";
+            String sorryPrompt = "Não cumprimente o cliente e escreva uma mensagem simples e curta informando ao cliente que não é possível remover do cardápio mais de um prato por vez.";
             return new ChatResponseDTO(sendRequest(sorryPrompt),false);
         }
 
@@ -466,7 +466,7 @@ public class GeminiService {
         StringBuilder promptIntroduceSpecificDishesWithCategory = new StringBuilder("Não envie nenhuma saudação ao cliente. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio de acordo com categoria. ");
 
         if(foundCategories.isEmpty()) {
-            promptIntroduceSpecificDishesWithCategory.append("No entanto, não foi possível encontrar nenhuma categoria solicitada pelo cliente, peça desculpas e diga que não foi possível encontrar a categoria solicitada. Além disso, recomende as seguintes categorias válidas: " + validCategoriesPrompt);
+            promptIntroduceSpecificDishesWithCategory.append("No entanto, não foi possível encontrar nenhuma categoria solicitada pelo cliente, retorne uma mensagem simples explicando que não foi possível encontrar a categoria solicitada. Além disso, recomende as seguintes categorias válidas: " + validCategoriesPrompt);
         } else {
             promptIntroduceSpecificDishesWithCategory.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             int i = 1;
