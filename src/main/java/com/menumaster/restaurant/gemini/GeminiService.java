@@ -389,7 +389,7 @@ public class GeminiService {
         StringBuilder promptIntroduceSpecificDishes = new StringBuilder("Não cumprimente o cliente. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio. ");
 
         if(foundDishes.isEmpty()) {
-            promptIntroduceSpecificDishes.append("No entanto, não foi possível encontrar nenhum prato solicitado pelo cliente, peça desculpas e diga que não foi possível encontrar as informações dos pratos solicitados.");
+            promptIntroduceSpecificDishes.append("No entanto, não foi possível encontrar nenhum prato solicitado pelo cliente, retorne uma mensagem simples e breve explicando que não foi possível encontrar as informações dos pratos solicitados.");
         } else {
             promptIntroduceSpecificDishes.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             int i = 1;
@@ -406,7 +406,7 @@ public class GeminiService {
         }
 
         if(!notFoundDishes.isEmpty()) {
-            promptIntroduceSpecificDishes.append("Além disso, peça desculpas e diga que não conseguiu encontrar informações a respeito dos seguintes pratos: ");
+            promptIntroduceSpecificDishes.append("Além disso, retorne uma mensagem simples e breve explicando que não conseguiu encontrar informações a respeito dos seguintes pratos: ");
             int i = 1;
             for(String dish : notFoundDishes) {
                 promptIntroduceSpecificDishes.append(i++).append("Prato: ").append(dish).append("\n");
@@ -427,7 +427,7 @@ public class GeminiService {
             }
         } else {
             validCategoriesPrompt.append("\nNão existe nenhuma categoria válida cadastrada\n");
-            String sorryPrompt = "Escreva uma mensaggem breve de desculpa ao cliente. Informando que a categoria informada não é válida.";
+            String sorryPrompt = "Retorne uma mensagem simples e breve explicando que a categoria informada não é válida.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
         }
         log.info("TESTE AQUI");
@@ -445,7 +445,7 @@ public class GeminiService {
         String categoriesName = sendRequest(promptGetCategoriesNames);
         log.info(categoriesName);
         if(categoriesName.contains("ERRO")) {
-            String sorryPrompt = "Escreva uma mensaggem breve de desculpa ao cliente. Informando que a categoria informada não é válida.";
+            String sorryPrompt = "Retorne uma mensagem simples e breve explicando que a categoria informada não é válida.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
         }
 
@@ -489,7 +489,7 @@ public class GeminiService {
         }
 
         if(!notFoundCategories.isEmpty()) {
-            promptIntroduceSpecificDishesWithCategory.append("Além disso, peça desculpas e diga que não conseguiu encontrar informações a respeito dos seguintes categorias: ");
+            promptIntroduceSpecificDishesWithCategory.append("Além disso, retorne uma mensagem simples e breve explicando que não conseguiu encontrar informações a respeito dos seguintes categorias: ");
             int i = 1;
             for(String categoryName : notFoundCategories) {
                 promptIntroduceSpecificDishesWithCategory.append(i++).append("Category: ").append(categoryName).append("\n");
@@ -527,7 +527,7 @@ public class GeminiService {
         String ingredientsNames = sendRequest(promptGetIngredientNames);
         log.info(ingredientsNames);
         if(ingredientsNames.contains("ERRO")) {
-            String sorryPrompt = "Escreva uma mensagem breve de desculpa ao cliente. Informando apenas que os ingredientes informados são inválidos.";
+            String sorryPrompt = "Retorne uma mensagem simples e breve explicando apenas que os ingredientes informados são inválidos.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
         }
 
@@ -550,7 +550,7 @@ public class GeminiService {
         StringBuilder promptIntroduceSpecificDishesWithIngredient = new StringBuilder("Não envie nenhuma saudação ao cliente. O cliente solicitou para visualizar informações de alguns pratos específicos do cardápio de acordo com ingredientes. ");
 
         if(foundIngredients.isEmpty()) {
-            promptIntroduceSpecificDishesWithIngredient.append("No entanto, não foi possível encontrar nenhum ingrediente solicitado pelo cliente, peça desculpas e apenas diga que não foi possível encontrar pratos com o ingrediente solicitado.");
+            promptIntroduceSpecificDishesWithIngredient.append("No entanto, não foi possível encontrar nenhum ingrediente solicitado pelo cliente, retorne uma mensagem simples e breve explicando que não foi possível encontrar pratos com o ingrediente solicitado.");
         } else {
             promptIntroduceSpecificDishesWithIngredient.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             int i = 1;
@@ -573,7 +573,7 @@ public class GeminiService {
         }
 
         if(!notFoundIngredients.isEmpty()) {
-            promptIntroduceSpecificDishesWithIngredient.append("Além disso, peça desculpas e apenas diga que não conseguiu encontrar informações a respeito de pratos com os seguintes ingredientes: ");
+            promptIntroduceSpecificDishesWithIngredient.append("Além disso, retorne uma mensagem simples e breve explicando que não conseguiu encontrar informações a respeito de pratos com os seguintes ingredientes: ");
             int i = 1;
             for(String ingredientName : notFoundIngredients) {
                 promptIntroduceSpecificDishesWithIngredient.append(i++).append("Ingrediente: ").append(ingredientName).append("\n");
@@ -589,7 +589,7 @@ public class GeminiService {
         StringBuilder prompt = new StringBuilder("Não cumprimente o cliente. O cliente solicitou para visualizar os pratos disponíveis no cardápio. ");
 
         if(dishDTOList.isEmpty()) {
-            prompt.append("No entanto, o cardápio está vazio. Escreva uma mensagem pedindo desculpas e avisando que não há pratos no cardápio.");
+            prompt.append("No entanto, o cardápio está vazio. Retorne uma mensagem simples e breve explicando que não há pratos no cardápio.");
         } else {
             prompt.append("Com base nos seguintes pratos, apresente o cardápio ao cliente de forma criativa, amigável e educada. Os pratos serão listados a seguir: ");
 
