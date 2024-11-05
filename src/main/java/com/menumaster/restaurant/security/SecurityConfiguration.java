@@ -60,7 +60,8 @@ public class SecurityConfiguration {
 
             // Ai Assistant
             "/ai-assistant/chat",
-            "/ai-assistant/transcribe-audio"
+            "/ai-assistant/transcribe-audio",
+            "/ai-assistant/transcribe"
     };
 
     public static final String[] ENDPOINTS_WITH_AUTHENTICATION_REQUIRED = {

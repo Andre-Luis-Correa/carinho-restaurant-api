@@ -148,7 +148,6 @@
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-vertexai</artifactId>
         </dependency>
-
     </dependencies>
 
     <dependencyManagement>

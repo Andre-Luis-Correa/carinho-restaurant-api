@@ -72,13 +72,6 @@ public class IngredientService {
         return ingredientPage.map(this::convertIngredientToIngredientDTO);
     }
 
-    public Ingredient getOrNull(Long id) {
-        if(ingredientRepository.findById(id).isEmpty()) {
-            return null;
-        }
-        return ingredientRepository.findById(id).get();
-    }
-
     public boolean existsById(Long id) {
         return ingredientRepository.existsById(id);
     }

@@ -7,12 +7,12 @@ automatic_scaling:
   max_instances: 2
 
 env_variables:
-  ACTIVE_PROFILE: gcloud
+  ACTIVE_PROFILE: prod
   DATABASE_URL: autorack.proxy.rlwy.net:13142
   DATABASE_NAME: railway
   DATABASE_USER: root
   DATABASE_PASSWORD: LBEfaiQOqlAtksqXWzfVbeqWnIdDqtax
   SERVER_PORT: '8080'
-  API_KEY: AIzaSyBj7D_d69IKHIDnXEkUdcuZ
-  BUCKET_ID: restaurante-carinho-bucket
+  API_KEY: AIzaSyC4-mIS6YajEfklY8AuIpNEFtMbixkQKrw
+  BUCKET_ID: projeto-esi-restaurant-carinho-bucket
   GCP_DIR_IMAGES_NAMES: dishimages

@@ -8,13 +8,10 @@ import com.menumaster.restaurant.dish.domain.dto.DishIngredientFormDTO;
 import com.menumaster.restaurant.dish.domain.model.Dish;
 import com.menumaster.restaurant.dish.domain.model.DishIngredient;
 import com.menumaster.restaurant.dish.service.DishService;
-import com.menumaster.restaurant.exception.type.AudioTranscriptionException;
-import com.menumaster.restaurant.gemini.GeminiService;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.measurementunit.domain.model.MeasurementUnit;
 import com.menumaster.restaurant.measurementunit.service.MeasurementUnitService;
-import com.menumaster.restaurant.transcription.TranscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -23,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +37,7 @@ public class DishController {
     private final MeasurementUnitService measurementUnitService;
 
     @PostMapping("/create")
-    public ResponseEntity<DishDTO> create(@Valid @RequestBody DishFormDTO dishFormDTO) throws IOException {
+    public ResponseEntity<DishDTO> createDish(@Valid @RequestBody DishFormDTO dishFormDTO) throws IOException {
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
         dishService.verifyNoDuplicatedIngredients(dishFormDTO.dishIngredientFormDTOList());
@@ -58,7 +54,7 @@ public class DishController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<DishDTO> update(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) throws IOException {
+    public ResponseEntity<DishDTO> updateDish(@PathVariable Long id, @RequestBody DishFormDTO dishFormDTO) throws IOException {
         Dish dish = dishService.getOrThrowException(id);
         Category category = categoryService.getOrThrowException(dishFormDTO.categoryId());
 
@@ -76,7 +72,7 @@ public class DishController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteDish(@PathVariable Long id) {
         Dish dish = dishService.getOrThrowException(id);
         dishService.delete(dish);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

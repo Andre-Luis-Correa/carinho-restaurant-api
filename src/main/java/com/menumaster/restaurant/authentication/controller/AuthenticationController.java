@@ -27,17 +27,6 @@ public class AuthenticationController {
         return new ResponseEntity<>(token, HttpStatus.OK);
     }
 
-    @GetMapping("/validate-token")
-    public ResponseEntity<String> validateToken(@RequestHeader("Authorization") String tokenHeader) {
-        String token = tokenHeader.replace("Bearer ", "");
-
-        if (jwtTokenService.isTokenValid(token)) {
-            return ResponseEntity.ok("Token válido");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido");
-        }
-    }
-
     @PostMapping("/create-user")
     public ResponseEntity<Void> createUser(@RequestBody CreateUserDto createUserDto) {
         userService.createUser(createUserDto);

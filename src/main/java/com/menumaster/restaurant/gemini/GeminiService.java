@@ -20,7 +20,6 @@ import com.menumaster.restaurant.ingredient.service.IngredientService;
 import com.menumaster.restaurant.measurementunit.domain.dto.MeasurementUnitDTO;
 import com.menumaster.restaurant.measurementunit.domain.model.MeasurementUnit;
 import com.menumaster.restaurant.measurementunit.service.MeasurementUnitService;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Log4j2
 public class GeminiService {
 
     private final String geminiQuestionUrl;
@@ -67,6 +65,7 @@ public class GeminiService {
 
         this.geminiQuestionUrl = geminiQuestionUrl + apiKey;
     }
+
     public String sendRequest(String prompt) throws IOException, InterruptedException {
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
@@ -130,7 +129,6 @@ public class GeminiService {
             prompt.append(intents.get(i)).append("\n");
         }
 
-        log.info(prompt);
         return sendRequest(prompt.toString());
     }
 
@@ -142,7 +140,7 @@ public class GeminiService {
         if(intent.contains("VIEW_SPECIFIC_DISH_CATEGORY")) intent = "VIEW_SPECIFIC_DISH_CATEGORY";
         if(intent.contains("VIEW_SPECIFIC_DISH_INGREDIENT")) intent = "VIEW_SPECIFIC_DISH_INGREDIENT";
         if(intent.contains("VIEW_MENU")) intent = "VIEW_MENU";
-        log.info("Intenção tratada:" + intent);
+
         return switch (intent) {
             case "CREATE_DISH" -> processCreateDishMessage(chatMessageDTO);
             case "DELETE_DISH" -> processDeleteDishMessage(chatMessageDTO);
@@ -152,7 +150,6 @@ public class GeminiService {
             case "VIEW_MENU" -> processViewMenuMessage();
             default -> processUserMessage(intent);
         };
-
     }
 
     public ChatResponseDTO processCreateDishMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
@@ -161,25 +158,23 @@ public class GeminiService {
         List<MeasurementUnitDTO> units = measurementUnitService.list();
 
         String prompt = createDishCreationPrompt(chatMessageDTO.userMessage(), categories, ingredients, units);
-        log.info(prompt);
         String responseJson = sendRequest(prompt);
-        log.info(responseJson);
+
         if(responseJson.contains("[ERRO]")) {
             responseJson = responseJson.replace("[ERRO]", "");
             return new ChatResponseDTO(responseJson, false);
         }
 
         DishFormDTO dishFormDTO = parseDishFormDTO(responseJson);
-
         Category category;
 
-        if(categoryService.existById(dishFormDTO.categoryId())) {
+        if(categoryService.existById(dishFormDTO.categoryId()))
             category = categoryService.getOrThrowException(dishFormDTO.categoryId());
-        } else {
+        else
             return new ChatResponseDTO(sendRequest("Retorne uma breve mensagem explicando que a categoria informada pelo cliente é inválida."), false);
-        }
 
         List<DishIngredient> dishIngredientList = new ArrayList<>();
+
         for(DishIngredientFormDTO dishIngredientFormDTO : dishFormDTO.dishIngredientFormDTOList()) {
             Ingredient ingredient;
             MeasurementUnit measurementUnit;
@@ -242,33 +237,33 @@ public class GeminiService {
                 .append("**Regras e Instruções para Extração e Validação dos Dados**:\n");
 
         prompt.append("""
-    **Regras e Instruções para Extração e Validação dos Dados**:
+        **Regras e Instruções para Extração e Validação dos Dados**:
+        
+        **Categoria**:
+        1. O nome da categoria deve ser mencionado explicitamente pelo cliente na mensagem e ser **exatamente igual a um dos nomes das categorias válidas listadas acima**.
+        2. Não associe nenhuma categoria automaticamente se o nome fornecido pelo cliente não corresponder exatamente a um dos nomes válidos.
+        3. Se a categoria estiver mencionada apenas como "categoria" sem nome, de forma incompleta, ou diferente dos nomes listados, retorne uma mensagem de erro começando com [ERRO].
+        4. Caso o cliente informe mais de uma categoria, também retorne uma mensagem de erro começando com [ERRO].
     
-    **Categoria**:
-    1. O nome da categoria deve ser mencionado explicitamente pelo cliente na mensagem e ser **exatamente igual a um dos nomes das categorias válidas listadas acima**.
-    2. Não associe nenhuma categoria automaticamente se o nome fornecido pelo cliente não corresponder exatamente a um dos nomes válidos.
-    3. Se a categoria estiver mencionada apenas como "categoria" sem nome, de forma incompleta, ou diferente dos nomes listados, retorne uma mensagem de erro começando com [ERRO].
-    4. Caso o cliente informe mais de uma categoria, também retorne uma mensagem de erro começando com [ERRO].
-
-    **Ingredientes**:
-    1. Ingredientes são obrigatórios para a criação de um prato. Cada prato deve incluir pelo menos um ingrediente válido, conforme listado acima.
-    2. Cada ingrediente deve ter uma quantidade especificada e uma unidade de medida válida (veja as unidades de medida válidas abaixo).
-    3. Se algum ingrediente não for encontrado na lista de ingredientes válidos ou se faltar quantidade ou unidade de medida, retorne uma mensagem de erro começando com [ERRO].
-
-    **Unidade de Medida**:
-    1. A unidade de medida para cada ingrediente deve ser informada **exatamente conforme os nomes completos listados acima**. Não aceite siglas, abreviações ou variações.
-    2. Caso a unidade de medida informada pelo cliente não corresponda exatamente ao nome completo listado acima, retorne uma mensagem de erro começando com [ERRO].
+        **Ingredientes**:
+        1. Ingredientes são obrigatórios para a criação de um prato. Cada prato deve incluir pelo menos um ingrediente válido, conforme listado acima.
+        2. Cada ingrediente deve ter uma quantidade especificada e uma unidade de medida válida (veja as unidades de medida válidas abaixo).
+        3. Se algum ingrediente não for encontrado na lista de ingredientes válidos ou se faltar quantidade ou unidade de medida, retorne uma mensagem de erro começando com [ERRO].
     
-    **Regras Gerais**:
-    1. Todos os dados obrigatórios devem estar presentes na mensagem do cliente. Se algum dado estiver ausente, retorne uma mensagem de erro começando com [ERRO], especificando o campo ausente.
-    2. O valor do prato em reais (`reaisPrice`) e o valor de custo (`reaisCostValue`) devem ser informados e ter 2 casas decimais. Arredonde valores, se necessário.
-    3. Defina sempre `isAvailable` como `true`.
-
-    **IMPORTANTE**:
-    - Se todos os dados forem extraídos e validados corretamente, retorne apenas o JSON final, sem texto adicional.
-    - Caso algum erro ocorra, a resposta deve começar com [ERRO] e descrever o problema específico.
-    - Utilize apenas os dados listados acima para validar categoria, ingredientes e unidades de medida. Qualquer valor não listado deve ser tratado como inválido.
-""");
+        **Unidade de Medida**:
+        1. A unidade de medida para cada ingrediente deve ser informada **exatamente conforme os nomes completos listados acima**. Não aceite siglas, abreviações ou variações.
+        2. Caso a unidade de medida informada pelo cliente não corresponda exatamente ao nome completo listado acima, retorne uma mensagem de erro começando com [ERRO].
+        
+        **Regras Gerais**:
+        1. Todos os dados obrigatórios devem estar presentes na mensagem do cliente. Se algum dado estiver ausente, retorne uma mensagem de erro começando com [ERRO], especificando o campo ausente.
+        2. O valor do prato em reais (`reaisPrice`) e o valor de custo (`reaisCostValue`) devem ser informados e ter 2 casas decimais. Arredonde valores, se necessário.
+        3. Defina sempre `isAvailable` como `true`.
+    
+        **IMPORTANTE**:
+        - Se todos os dados forem extraídos e validados corretamente, retorne apenas o JSON final, sem texto adicional.
+        - Caso algum erro ocorra, a resposta deve começar com [ERRO] e descrever o problema específico.
+        - Utilize apenas os dados listados acima para validar categoria, ingredientes e unidades de medida. Qualquer valor não listado deve ser tratado como inválido.
+        """);
 
         prompt.append("\nFormato JSON esperado para o DTO:\n")
                 .append("""
@@ -339,10 +334,10 @@ public class GeminiService {
                 
                 Lembre-se de retornar exatamente conforme o solicitado, sem incluir informações adicionais.
                 """;
-        log.info(prompt1);
+
         String dishName = sendRequest(prompt1);
         String[] dishNameList = dishName.split(";");
-        log.info(dishName);
+
         if(dishNameList.length > 1) {
             String sorryPrompt = "Não cumprimente o cliente e escreva uma mensagem simples e curta informando ao cliente que não é possível remover do cardápio mais de um prato por vez.";
             return new ChatResponseDTO(sendRequest(sorryPrompt),false);
@@ -418,7 +413,7 @@ public class GeminiService {
 
     private ChatResponseDTO processViewSpecificDishCategoryMessage(ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
         List<CategoryDTO> allCategoryList = categoryService.list();
-        log.info("TESTE AQUI");
+
         StringBuilder validCategoriesPrompt = new StringBuilder();
         if (!allCategoryList.isEmpty()) {
             validCategoriesPrompt.append("\nAs categorias válidas são:\n");
@@ -430,7 +425,7 @@ public class GeminiService {
             String sorryPrompt = "Retorne uma mensagem simples e breve explicando que a categoria informada não é válida.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
         }
-        log.info("TESTE AQUI");
+
         String promptGetCategoriesNames = validCategoriesPrompt +  "A partir da seguinte frase enviada pelo usuário: ["
                 + chatMessageDTO.userMessage() +
                 """
@@ -441,9 +436,9 @@ public class GeminiService {
                 retorne apenas o nome dele sem [;]
                 """;
 
-        log.info(promptGetCategoriesNames);
+
         String categoriesName = sendRequest(promptGetCategoriesNames);
-        log.info(categoriesName);
+
         if(categoriesName.contains("ERRO")) {
             String sorryPrompt = "Retorne uma mensagem simples e breve explicando que a categoria informada não é válida.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
@@ -522,10 +517,9 @@ public class GeminiService {
                 retorne apenas o nome dele sem [;]
                 """;
 
-        log.info(promptGetIngredientNames);
 
         String ingredientsNames = sendRequest(promptGetIngredientNames);
-        log.info(ingredientsNames);
+
         if(ingredientsNames.contains("ERRO")) {
             String sorryPrompt = "Retorne uma mensagem simples e breve explicando apenas que os ingredientes informados são inválidos.";
             return new ChatResponseDTO(sendRequest(sorryPrompt), false);
@@ -541,7 +535,6 @@ public class GeminiService {
             List<Ingredient> ingredientList = ingredientService.findByNameContainingIgnoreCase(trimmedIngredientName);
 
             if (!ingredientList.isEmpty()){
-                log.info("achei o ingrediente " + ingredientName);
                 foundIngredients.addAll(ingredientList);
             }
             else notFoundIngredients.add(ingredientName);
@@ -555,7 +548,6 @@ public class GeminiService {
             promptIntroduceSpecificDishesWithIngredient.append("Sendo assim, apresente ao cliente de maneira amigável e divertida as informações dos seguintes pratos: \n");
             int i = 1;
             for(Ingredient ingredient : foundIngredients) {
-                log.info(ingredient.getName());
                 List<DishIngredient> dishIngredientList = dishService.listAllByIngredient(ingredient);
 
                 if(!dishIngredientList.isEmpty()) {

@@ -25,20 +25,20 @@ public class IngredientController {
     private final MeasurementUnitService measurementUnitService;
 
     @PostMapping("/create")
-    public ResponseEntity<IngredientDTO> create(@Valid @RequestBody IngredientFormDTO ingredientFormDTO) {
+    public ResponseEntity<IngredientDTO> createIngredient(@Valid @RequestBody IngredientFormDTO ingredientFormDTO) {
         MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(ingredientFormDTO.measurementUnitId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ingredientService.create(ingredientFormDTO, measurementUnit));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<IngredientDTO> update(@PathVariable Long id, @RequestBody IngredientFormDTO ingredientFormDTO) {
+    public ResponseEntity<IngredientDTO> updateIngredient(@PathVariable Long id, @RequestBody IngredientFormDTO ingredientFormDTO) {
         Ingredient ingredient = ingredientService.getOrThrowException(id);
         MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(ingredientFormDTO.measurementUnitId());
         return ResponseEntity.status(HttpStatus.OK).body(ingredientService.update(ingredient, measurementUnit, ingredientFormDTO));
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteIngredient(@PathVariable Long id) {
         Ingredient ingredient = ingredientService.getOrThrowException(id);
         ingredientService.delete(ingredient);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

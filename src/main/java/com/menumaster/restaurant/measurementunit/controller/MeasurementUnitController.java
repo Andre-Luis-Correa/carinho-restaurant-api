@@ -22,18 +22,18 @@ public class MeasurementUnitController {
     private final MeasurementUnitService measurementUnitService;
 
     @PostMapping("/create")
-    public ResponseEntity<MeasurementUnitDTO> create(@Valid @RequestBody MeasurementUnitFormDTO measurementUnitFormDTO) {
+    public ResponseEntity<MeasurementUnitDTO> createMeasurementUnit(@Valid @RequestBody MeasurementUnitFormDTO measurementUnitFormDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(measurementUnitService.create(measurementUnitFormDTO));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<MeasurementUnitDTO> update(@PathVariable Long id, @RequestBody MeasurementUnitFormDTO measurementUnitFormDTO) {
+    public ResponseEntity<MeasurementUnitDTO> updateMeasurementUnit(@PathVariable Long id, @RequestBody MeasurementUnitFormDTO measurementUnitFormDTO) {
         MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(id);
         return ResponseEntity.status(HttpStatus.OK).body(measurementUnitService.update(measurementUnit, measurementUnitFormDTO));
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMeasurementUnit(@PathVariable Long id) {
         MeasurementUnit measurementUnit = measurementUnitService.getOrThrowException(id);
         measurementUnitService.delete(measurementUnit);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

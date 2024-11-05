@@ -19,7 +19,6 @@ import com.menumaster.restaurant.exception.type.UploadImageException;
 import com.menumaster.restaurant.ingredient.domain.model.Ingredient;
 import com.menumaster.restaurant.image.ImageUploadService;
 import com.menumaster.restaurant.measurementunit.domain.model.MeasurementUnit;
-import com.menumaster.restaurant.utils.UploadUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +40,6 @@ public class DishService {
     private final DishToDishDTOMapper dishToDishDTOMapper;
     private final DishIngredientFormDTOToDishIngredientMapper dishIngredientFormDTOToDishIngredientMapper;
     private final DishIngredientToDishIngredientDTOMapper dishIngredientToDishIngredientDTOMapper;
-    private final UploadUtil uploadUtil;
     private final ImageUploadService imageUploadService;
 
     public DishDTO create(Category category, List<DishIngredient> dishIngredientList, DishFormDTO dishFormDTO) throws IOException {

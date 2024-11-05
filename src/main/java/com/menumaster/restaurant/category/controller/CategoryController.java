@@ -22,18 +22,18 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping("/create")
-    public ResponseEntity<CategoryDTO> create(@Valid @RequestBody CategoryFormDTO categoryFormDTO) {
+    public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryFormDTO categoryFormDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.create(categoryFormDTO));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<CategoryDTO> update(@PathVariable Long id, @RequestBody CategoryFormDTO categoryFormDTO) {
+    public ResponseEntity<CategoryDTO> updateCategory(@PathVariable Long id, @RequestBody CategoryFormDTO categoryFormDTO) {
         Category category = categoryService.getOrThrowException(id);
         return ResponseEntity.status(HttpStatus.OK).body(categoryService.update(category, categoryFormDTO));
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         Category category = categoryService.getOrThrowException(id);
         categoryService.delete(category);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
