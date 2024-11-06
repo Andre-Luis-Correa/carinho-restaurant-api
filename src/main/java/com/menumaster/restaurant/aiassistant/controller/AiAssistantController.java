@@ -24,9 +24,7 @@ public class AiAssistantController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponseDTO> chatToAiAssistant(@Valid @RequestBody ChatMessageDTO chatMessageDTO) throws IOException, InterruptedException {
-
         String intent = geminiService.recognizeIntent(chatMessageDTO.userMessage());
-        log.info(intent);
 
         ChatResponseDTO chatResponseDTO = geminiService.processMessageBasedOnIntent(chatMessageDTO, intent);
         return ResponseEntity.ok().body(chatResponseDTO);
@@ -34,12 +32,9 @@ public class AiAssistantController {
 
     @PostMapping("/transcribe-audio")
     public ResponseEntity<String> transcribeAudioWithGemini(@RequestParam("file") MultipartFile file) throws IOException, InterruptedException {
-        log.info("Fazendo upload de audio!");
         String fileUri = transcriptionService.uploadAudio(file);
-        log.info("Nome do arquivo e bytes: " + file.getOriginalFilename());
-        log.info("Iniciando a transcrição de audio!");
         String transcriptionResponse = transcriptionService.transcribeAudioWithGemini2(fileUri);
-        log.info(transcriptionResponse);
+
         return ResponseEntity.ok().body(transcriptionResponse);
     }
 }

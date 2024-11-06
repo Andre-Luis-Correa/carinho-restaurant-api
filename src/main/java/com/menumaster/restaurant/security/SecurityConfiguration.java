@@ -29,7 +29,6 @@ public class SecurityConfiguration {
             // authentication
             "/authentication/login",
             "/authentication/create-user",
-            "/authentication/validate-token",
 
             // swagger
             "/swagger-ui.html",

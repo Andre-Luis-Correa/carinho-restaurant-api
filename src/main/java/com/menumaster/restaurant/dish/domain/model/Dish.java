@@ -12,7 +12,6 @@ import lombok.*;
 @NoArgsConstructor
 public class Dish {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
